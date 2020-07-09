@@ -1,7 +1,7 @@
 # Temporary Build Files
-build/_output
 build/_test
 coralogix-operator.yaml
+coralogix-operator.zip
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-

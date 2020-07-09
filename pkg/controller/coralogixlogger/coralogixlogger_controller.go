@@ -245,6 +245,7 @@ func newClusterRoleBinding(cr *coralogixv1.CoralogixLogger) *rbacv1.ClusterRoleB
 // newDaemonSet returns a DaemonSet with the same name/namespace as the cr
 func newDaemonSet(cr *coralogixv1.CoralogixLogger) *appsv1.DaemonSet {
 	var uid int64 = 0
+	var privileged bool = true
 	return &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
@@ -272,10 +273,11 @@ func newDaemonSet(cr *coralogixv1.CoralogixLogger) *appsv1.DaemonSet {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "fluentd-coralogix",
-						Image: "registry.connect.redhat.com/coralogix/coralogix-fluentd:latest",
+						Image: "registry.connect.redhat.com/coralogix/coralogix-fluentd:1.0.0",
 						ImagePullPolicy: corev1.PullAlways,
 						SecurityContext: &corev1.SecurityContext{
 							RunAsUser: &uid,
+							Privileged: &privileged,
 						},
 						Env: []corev1.EnvVar{
 							{
@@ -284,9 +286,6 @@ func newDaemonSet(cr *coralogixv1.CoralogixLogger) *appsv1.DaemonSet {
 							},
 						},
 						Resources: corev1.ResourceRequirements{
-							Limits: corev1.ResourceList{
-								corev1.ResourceMemory: resource.MustParse("1Gi"),
-							},
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU: resource.MustParse("100m"),
 								corev1.ResourceMemory: resource.MustParse("400Mi"),

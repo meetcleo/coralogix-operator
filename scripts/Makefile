@@ -1,6 +1,6 @@
 .PHONY:	build push clean publish render deploy
 
-PREFIX = docker.io/coralogixrepo
+PREFIX = registry.connect.redhat.com/coralogix
 IMAGE = coralogix-operator
 TAG ?= $(or ${VERSION},1.0.0)
 
@@ -25,5 +25,9 @@ deploy: render
 undeploy:
 	@kubectl delete -f deploy/crds/coralogix.com_coralogixloggers_crd.yaml
 	@kubectl delete -f coralogix-operator.yaml
+
+package:
+	@cp -f deploy/crds/coralogix.com_coralogixloggers_crd.yaml bundle/coralogix-operator.v$(TAG).crd.yaml
+	@cp -f deploy/olm-catalog/coralogix-operator/$(TAG)/coralogix-operator.clusterserviceversion.yaml bundle/coralogix-operator.v$(TAG).clusterserviceversion.yaml
 
 publish: build render push

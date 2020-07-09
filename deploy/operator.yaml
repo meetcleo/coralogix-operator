@@ -16,7 +16,7 @@ spec:
       serviceAccountName: coralogix-operator
       containers:
         - name: coralogix-operator
-          image: docker.io/coralogixrepo/coralogix-operator:1.0.0
+          image: registry.connect.redhat.com/coralogix/coralogix-operator:1.0.0
           command:
           - coralogix-operator
           imagePullPolicy: Always
