@@ -1,0 +1,7 @@
+apiVersion: coralogix.com/v1
+kind: CoralogixLogger
+metadata:
+  name: coralogix-logger
+  namespace: kube-system
+spec:
+  private_key: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
