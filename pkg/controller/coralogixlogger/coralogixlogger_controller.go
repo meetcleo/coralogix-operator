@@ -2,6 +2,7 @@ package coralogixlogger
 
 import (
 	"context"
+	"reflect"
 
 	coralogixv1 "github.com/coralogix/coralogix-operator/pkg/apis/coralogix/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -81,6 +82,9 @@ func (r *ReconcileCoralogixLogger) Reconcile(request reconcile.Request) (reconci
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling CoralogixLogger")
 
+	// Fetch the CoralogixLogger instance status
+	instanceStatus := coralogixv1.CoralogixLoggerStatus{}
+
 	// Fetch the CoralogixLogger instance
 	instance := &coralogixv1.CoralogixLogger{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
@@ -108,9 +112,11 @@ func (r *ReconcileCoralogixLogger) Reconcile(request reconcile.Request) (reconci
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		instanceStatus.ServiceAccount = serviceAccount.Name
 	} else if err != nil {
 		return reconcile.Result{}, err
 	} else {
+		instanceStatus.ServiceAccount = foundServiceAccount.Name
 		reqLogger.Info("Skip: ServiceAccount already exists", "ServiceAccount.Namespace", foundServiceAccount.Namespace, "ServiceAccount.Name", foundServiceAccount.Name)
 	}
 
@@ -127,9 +133,11 @@ func (r *ReconcileCoralogixLogger) Reconcile(request reconcile.Request) (reconci
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		instanceStatus.ClusterRole = clusterRole.Name
 	} else if err != nil {
 		return reconcile.Result{}, err
 	} else {
+		instanceStatus.ClusterRole = foundClusterRole.Name
 		reqLogger.Info("Skip: ClusterRole already exists", "ClusterRole.Namespace", foundClusterRole.Namespace, "ClusterRole.Name", foundClusterRole.Name)
 	}
 
@@ -146,9 +154,11 @@ func (r *ReconcileCoralogixLogger) Reconcile(request reconcile.Request) (reconci
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		instanceStatus.ClusterRoleBinding = clusterRoleBinding.Name
 	} else if err != nil {
 		return reconcile.Result{}, err
 	} else {
+		instanceStatus.ClusterRoleBinding = foundClusterRoleBinding.Name
 		reqLogger.Info("Skip: ClusterRoleBinding already exists", "ClusterRoleBinding.Namespace", foundClusterRoleBinding.Namespace, "ClusterRoleBinding.Name", foundClusterRoleBinding.Name)
 	}
 
@@ -165,12 +175,24 @@ func (r *ReconcileCoralogixLogger) Reconcile(request reconcile.Request) (reconci
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{}, nil
+		instanceStatus.DaemonSet = daemonSet.Name
 	} else if err != nil {
 		return reconcile.Result{}, err
+	} else {
+		instanceStatus.DaemonSet = foundDaemonSet.Name
+		reqLogger.Info("Skip: DaemonSet already exists", "DaemonSet.Namespace", foundDaemonSet.Namespace, "DaemonSet.Name", foundDaemonSet.Name)
 	}
 
-	reqLogger.Info("Skip reconcile: DaemonSet already exists", "DaemonSet.Namespace", foundDaemonSet.Namespace, "DaemonSet.Name", foundDaemonSet.Name)
+	// Set the CoralogixLogger instance status
+	if !reflect.DeepEqual(instance.Status, instanceStatus) {
+		instance.Status = instanceStatus
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update status")
+			return reconcile.Result{}, err
+		}
+	}
+
 	return reconcile.Result{}, nil
 }
 
@@ -284,6 +306,10 @@ func newDaemonSet(cr *coralogixv1.CoralogixLogger) *appsv1.DaemonSet {
 								Name: "CORALOGIX_PRIVATE_KEY",
 								Value: cr.Spec.PrivateKey,
 							},
+							{
+								Name: "CLUSTER_NAME",
+								Value: cr.Spec.ClusterName,
+							},
 						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -322,12 +348,6 @@ func newDaemonSet(cr *coralogixv1.CoralogixLogger) *appsv1.DaemonSet {
 						},
 					},
 					ServiceAccountName: "fluentd-coralogix-service-account",
-					Tolerations: []corev1.Toleration{
-						{
-							Key: "node-role.kubernetes.io/master",
-							Effect: corev1.TaintEffectNoSchedule,
-						},
-					},
 				},
 			},
 		},

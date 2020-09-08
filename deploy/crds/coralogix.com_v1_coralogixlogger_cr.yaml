@@ -5,3 +5,4 @@ metadata:
   namespace: kube-system
 spec:
   private_key: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+  cluster_name: cluster.local

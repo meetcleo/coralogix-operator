@@ -32,14 +32,46 @@ spec:
           spec:
             description: CoralogixLoggerSpec defines the desired state of CoralogixLogger
             properties:
+              cluster_name:
+                description: Cluster name
+                title: Cluster Name
+                type: string
               private_key:
                 description: Coralogix Private Key
+                title: Private Key
                 type: string
+                format: password
+                pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-z]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                minLength: 36
+                maxLength: 36
             required:
+            - cluster_name
             - private_key
             type: object
           status:
             description: CoralogixLoggerStatus defines the observed state of CoralogixLogger
+            properties:
+              serviceAccount:
+                description: ServiceAccount name
+                title: ServiceAccount
+                type: string
+              clusterRole:
+                description: ClusterRole
+                title: ClusterRole
+                type: string
+              clusterRoleBinding:
+                description: ClusterRoleBinding name
+                title: ClusterRoleBinding
+                type: string
+              daemonSet:
+                description: DaemonSet name
+                title: DaemonSet
+                type: string
+            required:
+            - serviceAccount
+            - clusterRole
+            - clusterRoleBinding
+            - daemonSet
             type: object
         type: object
     served: true

@@ -10,14 +10,21 @@ import (
 // CoralogixLoggerSpec defines the desired state of CoralogixLogger
 type CoralogixLoggerSpec struct {
 	// Coralogix Private Key
-	PrivateKey string `json:"private_key"`
+	PrivateKey  string `json:"private_key"`
+	// Cluster name
+	ClusterName string `json:"cluster_name"`
 }
 
 // CoralogixLoggerStatus defines the observed state of CoralogixLogger
 type CoralogixLoggerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	// ServiceAccount
+	ServiceAccount	   string `json:"serviceAccount"`
+	// ClusterRole
+	ClusterRole		   string `json:"clusterRole"`
+	// ClusterRoleBinding
+	ClusterRoleBinding string `json:"clusterRoleBinding"`
+	// DaemonSet
+	DaemonSet          string `json:"daemonSet"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

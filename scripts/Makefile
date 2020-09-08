@@ -26,8 +26,4 @@ undeploy:
 	@kubectl delete -f deploy/crds/coralogix.com_coralogixloggers_crd.yaml
 	@kubectl delete -f coralogix-operator.yaml
 
-package:
-	@cp -f deploy/crds/coralogix.com_coralogixloggers_crd.yaml bundle/coralogix-operator.v$(TAG).crd.yaml
-	@cp -f deploy/olm-catalog/coralogix-operator/$(TAG)/coralogix-operator.clusterserviceversion.yaml bundle/coralogix-operator.v$(TAG).clusterserviceversion.yaml
-
 publish: build render push
