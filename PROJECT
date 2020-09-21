@@ -1,0 +1,11 @@
+domain: coralogix.com
+layout: go.kubebuilder.io/v2
+projectName: coralogix-operator
+repo: github.com/coralogix/coralogix-operator
+resources:
+- group: loggers
+  kind: CoralogixLogger
+  version: v1
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}

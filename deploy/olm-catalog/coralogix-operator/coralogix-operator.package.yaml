@@ -1,5 +1,0 @@
-packageName: coralogix-operator-certified
-channels:
-- name: stable
-  currentCSV: coralogix-operator.v1.0.0
-defaultChannel: stable
