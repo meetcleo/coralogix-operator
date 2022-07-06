@@ -119,6 +119,7 @@ spec:
     type: MultiNamespace
   - supported: true
     type: AllNamespaces
+  relatedImages: []
   keywords:
   - coralogix
   - logging
