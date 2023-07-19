@@ -18,7 +18,9 @@ package alphacontrollers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -76,6 +78,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		//Indent: "\t",
 	}
 	alertsClient := r.CoralogixClientSet.Alerts()
+	coralogixv1alpha1.WebhooksClient = r.CoralogixClientSet.Webhooks()
 
 	//Get alertCRD
 	alertCRD := &coralogixv1alpha1.Alert{}
@@ -147,6 +150,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	var notFount bool
 	var err error
 	var actualState *coralogixv1alpha1.AlertStatus
+	var flattenErr error
 
 	if id := alertCRD.Status.ID; id == nil {
 		log.V(1).Info("alert wasn't created")
@@ -155,7 +159,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		log.V(1).Info("alert doesn't exist in Coralogix backend", "ID", id)
 		notFount = true
 	} else if err == nil {
-		actualState = flattenAlert(getAlertResp.GetAlert(), alertCRD.Spec)
+		actualState, flattenErr = flattenAlert(ctx, getAlertResp.GetAlert(), alertCRD.Spec)
 	}
 
 	if notFount {
@@ -168,7 +172,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
 		}
 
-		createAlertReq, err := alertCRD.Spec.ExtractCreateAlertRequest()
+		createAlertReq, err := alertCRD.Spec.ExtractCreateAlertRequest(ctx)
 		if err != nil {
 			log.Error(err, "Bad request for creating alert", "Name", alertCRD.Name, "Namespace", alertCRD.Namespace)
 			return ctrl.Result{}, err
@@ -179,7 +183,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if createAlertResp, err := alertsClient.CreateAlert(ctx, createAlertReq); err == nil {
 			jstr, _ = jsm.MarshalToString(createAlertResp)
 			log.V(1).Info("Alert was created", "alert", jstr)
-			actualState = flattenAlert(createAlertResp.GetAlert(), alertCRD.Spec)
+			actualState, flattenErr = flattenAlert(ctx, createAlertResp.GetAlert(), alertCRD.Spec)
 			alertCRD.Status = *actualState
 			if err := r.Status().Update(ctx, alertCRD); err != nil {
 				log.Error(err, "Error on updating alert", "Name", alertCRD.Name, "Namespace", alertCRD.Namespace)
@@ -197,7 +201,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if equal, diff := alertCRD.Spec.DeepEqual(actualState); !equal {
 		log.V(1).Info("Find diffs between spec and the actual state", "Diff", diff)
-		updateAlertReq, err := alertCRD.Spec.ExtractUpdateAlertRequest(*alertCRD.Status.ID)
+		updateAlertReq, err := alertCRD.Spec.ExtractUpdateAlertRequest(ctx, *alertCRD.Status.ID)
 		if err != nil {
 			log.Error(err, "Bad request for updating alert", "Name", alertCRD.Name, "Namespace", alertCRD.Namespace)
 			return ctrl.Result{}, err
@@ -212,11 +216,17 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		log.V(1).Info("Alert was updated", "alert", jstr)
 	}
 
+	if flattenErr != nil {
+		log.Error(err, "Received an error while flattened Alert")
+		return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+	}
+
 	return ctrl.Result{RequeueAfter: defaultRequeuePeriod}, nil
 }
 
-func flattenAlert(actualAlert *alerts.Alert, spec coralogixv1alpha1.AlertSpec) *coralogixv1alpha1.AlertStatus {
+func flattenAlert(ctx context.Context, actualAlert *alerts.Alert, spec coralogixv1alpha1.AlertSpec) (*coralogixv1alpha1.AlertStatus, error) {
 	var status coralogixv1alpha1.AlertStatus
+	var err error
 
 	status.ID = new(string)
 	*status.ID = actualAlert.GetUniqueIdentifier().GetValue()
@@ -237,11 +247,11 @@ func flattenAlert(actualAlert *alerts.Alert, spec coralogixv1alpha1.AlertSpec) *
 
 	status.AlertType = flattenAlertType(actualAlert)
 
-	status.NotificationGroups = flattenNotificationGroups(actualAlert.GetNotificationGroups())
+	status.NotificationGroups, err = flattenNotificationGroups(ctx, actualAlert.GetNotificationGroups())
 
 	status.ShowInInsight = flattenShowInInsight(actualAlert.GetShowInInsight())
 
-	return &status
+	return &status, err
 }
 
 func flattenAlertType(actualAlert *alerts.Alert) coralogixv1alpha1.AlertType {
@@ -954,35 +964,50 @@ func flattenDaysOfWeek(daysOfWeek []alerts.DayOfWeek, daysOffset int32) []coralo
 	return result
 }
 
-func flattenNotificationGroups(notificationGroups []*alerts.AlertNotificationGroups) []coralogixv1alpha1.NotificationGroup {
+func flattenNotificationGroups(ctx context.Context, notificationGroups []*alerts.AlertNotificationGroups) ([]coralogixv1alpha1.NotificationGroup, error) {
 	result := make([]coralogixv1alpha1.NotificationGroup, 0, len(notificationGroups))
+	errors := make([]error, 0)
 	for _, ng := range notificationGroups {
-		notificationGroup := flattenNotificationGroup(ng)
+		notificationGroup, errs := flattenNotificationGroup(ctx, ng)
+		errors = append(errors, errs...)
 		result = append(result, notificationGroup)
 	}
-	return result
+
+	if len(errors) > 0 {
+		var errStr string
+		for _, err := range errors {
+			errStr += err.Error() + "\n"
+		}
+		return result, fmt.Errorf(errStr)
+	}
+
+	return result, nil
 }
 
-func flattenNotificationGroup(notificationGroup *alerts.AlertNotificationGroups) coralogixv1alpha1.NotificationGroup {
+func flattenNotificationGroup(ctx context.Context, notificationGroup *alerts.AlertNotificationGroups) (coralogixv1alpha1.NotificationGroup, []error) {
 	groupByFields := utils.WrappedStringSliceToStringSlice(notificationGroup.GroupByFields)
-	notifications := flattenNotifications(notificationGroup.Notifications)
+	notifications, errors := flattenNotifications(ctx, notificationGroup.Notifications)
 
 	return coralogixv1alpha1.NotificationGroup{
 		GroupByFields: groupByFields,
 		Notifications: notifications,
-	}
+	}, errors
 }
 
-func flattenNotifications(notifications []*alerts.AlertNotification) []coralogixv1alpha1.Notification {
+func flattenNotifications(ctx context.Context, notifications []*alerts.AlertNotification) ([]coralogixv1alpha1.Notification, []error) {
 	result := make([]coralogixv1alpha1.Notification, 0, len(notifications))
+	errors := make([]error, 0)
 	for _, n := range notifications {
-		notification := flattenNotification(n)
+		notification, err := flattenNotification(ctx, n)
+		if err != nil {
+			errors = append(errors, err)
+		}
 		result = append(result, notification)
 	}
-	return result
+	return result, errors
 }
 
-func flattenNotification(notification *alerts.AlertNotification) coralogixv1alpha1.Notification {
+func flattenNotification(ctx context.Context, notification *alerts.AlertNotification) (coralogixv1alpha1.Notification, error) {
 	notifyOn := alertProtoNotifyOn[notification.GetNotifyOn()]
 	retriggeringPeriodMinutes := int32(notification.GetRetriggeringPeriodSeconds().GetValue()) / 60
 	flattenedNotification := coralogixv1alpha1.Notification{
@@ -992,13 +1017,22 @@ func flattenNotification(notification *alerts.AlertNotification) coralogixv1alph
 
 	switch integration := notification.GetIntegrationType().(type) {
 	case *alerts.AlertNotification_IntegrationId:
-		flattenedNotification.IntegrationID = new(int32)
-		*flattenedNotification.IntegrationID = int32(integration.IntegrationId.GetValue())
+		id := strconv.Itoa(int(integration.IntegrationId.GetValue()))
+		webhookStr, err := coralogixv1alpha1.WebhooksClient.GetWebhook(ctx, id)
+		if err != nil {
+			return flattenedNotification, err
+		}
+		var m map[string]interface{}
+		if err = json.Unmarshal([]byte(webhookStr), &m); err != nil {
+			return flattenedNotification, err
+		}
+		flattenedNotification.IntegrationName = new(string)
+		*flattenedNotification.IntegrationName = m["alias"].(string)
 	case *alerts.AlertNotification_Recipients:
 		flattenedNotification.EmailRecipients = utils.WrappedStringSliceToStringSlice(integration.Recipients.Emails)
 	}
 
-	return flattenedNotification
+	return flattenedNotification, nil
 }
 
 func flattenShowInInsight(showInInsight *alerts.ShowInInsight) *coralogixv1alpha1.ShowInInsight {
