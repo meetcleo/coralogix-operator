@@ -19,6 +19,7 @@ package alphacontrollers
 import (
 	"context"
 	"encoding/json"
+	stdErr "errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -75,7 +76,7 @@ type AlertReconciler struct {
 func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	jsm := &jsonpb.Marshaler{
-		//Indent: "\t",
+		EmitDefaults: true,
 	}
 	alertsClient := r.CoralogixClientSet.Alerts()
 	coralogixv1alpha1.WebhooksClient = r.CoralogixClientSet.Webhooks()
@@ -244,6 +245,10 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 func flattenAlert(ctx context.Context, actualAlert *alerts.Alert, spec coralogixv1alpha1.AlertSpec) (*coralogixv1alpha1.AlertStatus, error) {
+	if actualAlert == nil {
+		return nil, stdErr.New("alert is nil")
+	}
+
 	var status coralogixv1alpha1.AlertStatus
 	var err error
 
@@ -262,11 +267,20 @@ func flattenAlert(ctx context.Context, actualAlert *alerts.Alert, spec coralogix
 
 	status.ExpirationDate = flattenExpirationDate(actualAlert.GetExpiration())
 
-	status.Scheduling = flattenScheduling(actualAlert.GetActiveWhen(), spec)
+	var timeZone coralogixv1alpha1.TimeZone
+	if spec.Scheduling != nil {
+		timeZone = spec.Scheduling.TimeZone
+	}
+
+	status.Scheduling = flattenScheduling(actualAlert.GetActiveWhen(), timeZone)
 
 	status.AlertType = flattenAlertType(actualAlert)
 
-	status.NotificationGroups, err = flattenNotificationGroups(ctx, actualAlert.GetNotificationGroups())
+	if notificationGroups, flattenErr := flattenNotificationGroups(ctx, actualAlert.GetNotificationGroups()); flattenErr != nil {
+		err = stdErr.Join(err, fmt.Errorf("error on flatten alert - %w", flattenErr))
+	} else {
+		status.NotificationGroups = notificationGroups
+	}
 
 	status.ShowInInsight = flattenShowInInsight(actualAlert.GetShowInInsight())
 
@@ -919,18 +933,12 @@ func flattenExpirationDate(expirationDate *alerts.Date) *coralogixv1alpha1.Expir
 	}
 }
 
-func flattenScheduling(scheduling *alerts.AlertActiveWhen, spec coralogixv1alpha1.AlertSpec) *coralogixv1alpha1.Scheduling {
+func flattenScheduling(scheduling *alerts.AlertActiveWhen, timeZone coralogixv1alpha1.TimeZone) *coralogixv1alpha1.Scheduling {
 	if scheduling == nil || len(scheduling.GetTimeframes()) == 0 {
 		return nil
 	}
 
-	timeZone := coralogixv1alpha1.TimeZone("UTC+00")
-	var utc int32
-	if spec.Scheduling != nil {
-		timeZone = spec.Scheduling.TimeZone
-		utc = coralogixv1alpha1.ExtractUTC(timeZone)
-	}
-
+	utc := coralogixv1alpha1.ExtractUTC(timeZone)
 	timeframe := scheduling.GetTimeframes()[0]
 	timeRange := timeframe.GetRange()
 	activityStartGMT, activityEndGMT := timeRange.GetStart(), timeRange.GetEnd()
@@ -995,45 +1003,42 @@ func flattenDaysOfWeek(daysOfWeek []alerts.DayOfWeek, daysOffset int32) []coralo
 
 func flattenNotificationGroups(ctx context.Context, notificationGroups []*alerts.AlertNotificationGroups) ([]coralogixv1alpha1.NotificationGroup, error) {
 	result := make([]coralogixv1alpha1.NotificationGroup, 0, len(notificationGroups))
-	errors := make([]error, 0)
+	var err error
 	for _, ng := range notificationGroups {
-		notificationGroup, errs := flattenNotificationGroup(ctx, ng)
-		errors = append(errors, errs...)
-		result = append(result, notificationGroup)
-	}
-
-	if len(errors) > 0 {
-		var errStr string
-		for _, err := range errors {
-			errStr += err.Error() + "\n"
+		notificationGroup, flattenErr := flattenNotificationGroup(ctx, ng)
+		if err != nil {
+			err = stdErr.Join(err, fmt.Errorf("error on flatten notification-groups - %w", flattenErr))
 		}
-		return result, fmt.Errorf(errStr)
+		result = append(result, *notificationGroup)
 	}
 
-	return result, nil
+	return result, err
 }
 
-func flattenNotificationGroup(ctx context.Context, notificationGroup *alerts.AlertNotificationGroups) (coralogixv1alpha1.NotificationGroup, []error) {
+func flattenNotificationGroup(ctx context.Context, notificationGroup *alerts.AlertNotificationGroups) (*coralogixv1alpha1.NotificationGroup, error) {
 	groupByFields := utils.WrappedStringSliceToStringSlice(notificationGroup.GroupByFields)
-	notifications, errors := flattenNotifications(ctx, notificationGroup.Notifications)
+	notifications, err := flattenNotifications(ctx, notificationGroup.Notifications)
+	if err != nil {
+		return nil, fmt.Errorf("error on flatten notification-group - %s", err.Error())
+	}
 
-	return coralogixv1alpha1.NotificationGroup{
+	return &coralogixv1alpha1.NotificationGroup{
 		GroupByFields: groupByFields,
 		Notifications: notifications,
-	}, errors
+	}, nil
 }
 
-func flattenNotifications(ctx context.Context, notifications []*alerts.AlertNotification) ([]coralogixv1alpha1.Notification, []error) {
+func flattenNotifications(ctx context.Context, notifications []*alerts.AlertNotification) ([]coralogixv1alpha1.Notification, error) {
 	result := make([]coralogixv1alpha1.Notification, 0, len(notifications))
-	errors := make([]error, 0)
-	for _, n := range notifications {
-		notification, err := flattenNotification(ctx, n)
-		if err != nil {
-			errors = append(errors, err)
+	var err error
+	for _, notification := range notifications {
+		flattenedNotification, flattenErr := flattenNotification(ctx, notification)
+		if flattenErr != nil {
+			err = stdErr.Join(err, fmt.Errorf("error on flatten notifications - %w", flattenErr))
 		}
-		result = append(result, notification)
+		result = append(result, flattenedNotification)
 	}
-	return result, errors
+	return result, err
 }
 
 func flattenNotification(ctx context.Context, notification *alerts.AlertNotification) (coralogixv1alpha1.Notification, error) {
@@ -1049,11 +1054,11 @@ func flattenNotification(ctx context.Context, notification *alerts.AlertNotifica
 		id := strconv.Itoa(int(integration.IntegrationId.GetValue()))
 		webhookStr, err := coralogixv1alpha1.WebhooksClient.GetWebhook(ctx, id)
 		if err != nil {
-			return flattenedNotification, err
+			return flattenedNotification, fmt.Errorf("error on get webhook - %w", err)
 		}
 		var m map[string]interface{}
 		if err = json.Unmarshal([]byte(webhookStr), &m); err != nil {
-			return flattenedNotification, err
+			return flattenedNotification, fmt.Errorf("error on unmarshal webhook - %w", err)
 		}
 		flattenedNotification.IntegrationName = new(string)
 		*flattenedNotification.IntegrationName = m["alias"].(string)
