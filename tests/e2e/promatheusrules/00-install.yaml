@@ -18,6 +18,7 @@ spec:
           for: 5m
           annotations:
             cxMinNonNullValuesPercentage: "20"
+            integrationName: "test"
     - name: example.rules2
       interval: "70s"
       rules:

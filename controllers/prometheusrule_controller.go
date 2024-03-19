@@ -214,11 +214,17 @@ func shouldTrackRecordingRules(prometheusRule *prometheus.PrometheusRule) bool {
 	if value, ok := prometheusRule.Labels["app.coralogix.com/track-recording-rules"]; ok && value == "true" {
 		return true
 	}
+	if value, ok := prometheusRule.Labels["app.kubernetes.io/component"]; ok && value == "SLO" {
+		return true
+	}
 	return false
 }
 
 func shouldTrackAlerts(prometheusRule *prometheus.PrometheusRule) bool {
 	if value, ok := prometheusRule.Labels["app.coralogix.com/track-alerting-rules"]; ok && value == "true" {
+		return true
+	}
+	if value, ok := prometheusRule.Labels["app.kubernetes.io/component"]; ok && value == "SLO" {
 		return true
 	}
 	return false
@@ -252,6 +258,14 @@ func prometheusRuleToRuleGroupSet(prometheusRule *prometheus.PrometheusRule) (co
 
 func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralogixv1alpha1.AlertSpec {
 	var notificationPeriod int
+	var integrationNamePointer *string
+
+	integrationName, ok := prometheusRule.Annotations["cxIntegrationName"]
+	if !ok {
+		integrationNamePointer = nil
+	} else {
+		integrationNamePointer = &integrationName
+	}
 	if cxNotifyEveryMin, ok := prometheusRule.Annotations["cxNotifyEveryMin"]; ok {
 		notificationPeriod, _ = strconv.Atoi(cxNotifyEveryMin)
 	} else {
@@ -275,6 +289,7 @@ func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralog
 				Notifications: []coralogixv1alpha1.Notification{
 					{
 						RetriggeringPeriodMinutes: int32(notificationPeriod),
+						IntegrationName:           integrationNamePointer,
 					},
 				},
 			},

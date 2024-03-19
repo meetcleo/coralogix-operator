@@ -180,6 +180,7 @@ func expectedPrometheusRuleCRD() *prometheus.PrometheusRule {
 							For:   "5m",
 							Annotations: map[string]string{
 								"cxMinNonNullValuesPercentage": "20",
+								"integrationName":              "test",
 							},
 						},
 					},
