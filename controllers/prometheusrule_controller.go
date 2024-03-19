@@ -310,7 +310,8 @@ func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralog
 				},
 			},
 		},
-		Name: prometheusRule.Alert,
+		Name:   prometheusRule.Alert,
+		Labels: prometheusRule.Labels,
 		AlertType: coralogixv1alpha1.AlertType{
 			Metric: &coralogixv1alpha1.Metric{
 				Promql: &coralogixv1alpha1.Promql{
