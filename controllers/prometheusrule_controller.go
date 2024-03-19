@@ -259,6 +259,7 @@ func prometheusRuleToRuleGroupSet(prometheusRule *prometheus.PrometheusRule) (co
 func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralogixv1alpha1.AlertSpec {
 	var notificationPeriod int
 	var integrationNamePointer *string
+	var severityLevel coralogixv1alpha1.AlertSeverity
 
 	integrationName, ok := prometheusRule.Annotations["cxIntegrationName"]
 	if !ok {
@@ -282,8 +283,23 @@ func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralog
 		timeWindow = prometheusAlertForToCoralogixPromqlAlertTimeWindow["1m"]
 	}
 
+	if severity, ok := prometheusRule.Labels["severity"]; ok {
+		switch s := strings.ToLower(severity); s {
+		case "info":
+			severityLevel = coralogixv1alpha1.AlertSeverityInfo
+		case "warning":
+			severityLevel = coralogixv1alpha1.AlertSeverityWarning
+		case "error":
+			severityLevel = coralogixv1alpha1.AlertSeverityError
+		case "critical":
+			severityLevel = coralogixv1alpha1.AlertSeverityCritical
+		}
+	} else {
+		severityLevel = coralogixv1alpha1.AlertSeverityInfo
+	}
+
 	return coralogixv1alpha1.AlertSpec{
-		Severity: coralogixv1alpha1.AlertSeverityInfo,
+		Severity: severityLevel,
 		NotificationGroups: []coralogixv1alpha1.NotificationGroup{
 			{
 				Notifications: []coralogixv1alpha1.Notification{
