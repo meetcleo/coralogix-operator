@@ -37,9 +37,11 @@ const (
 	PrometheusRuleKind        = "PrometheusRule"
 	DashboardKind             = "Dashboard"
 	DashboardsFolderKind      = "DashboardFolder"
+	KubernetesComponentSLO    = "SLO"
 
 	TrackPrometheusRuleAlertsLabelKey         = "app.coralogix.com/track-alerting-rules"
 	TrackPrometheusRuleRecordingRulesLabelKey = "app.coralogix.com/track-recording-rules"
+	KubernetesComponentLabelKey               = "app.kubernetes.io/component"
 
 	LogVerbosityAnnotationKey = "app.coralogix.com/log-verbosity"
 )

@@ -20,6 +20,7 @@ spec:
             description: "This is an app latency alert"
           labels:
             severity: critical
+            integrationName: "test"
     - name: example.rules2
       interval: "70s"
       rules:
@@ -33,4 +34,4 @@ spec:
           annotations:
             description: "This is an app latency alert"
           labels:
-              severity: info
+            severity: info

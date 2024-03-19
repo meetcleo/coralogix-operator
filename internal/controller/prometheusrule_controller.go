@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,7 +38,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/coralogix/coralogix-operator/api/coralogix/v1alpha1"
 	coralogixv1alpha1 "github.com/coralogix/coralogix-operator/api/coralogix/v1alpha1"
+	"github.com/coralogix/coralogix-operator/api/coralogix/v1beta1"
 	coralogixv1beta1 "github.com/coralogix/coralogix-operator/api/coralogix/v1beta1"
 	"github.com/coralogix/coralogix-operator/internal/config"
 	"github.com/coralogix/coralogix-operator/internal/utils"
@@ -344,6 +348,9 @@ func shouldTrackRecordingRules(prometheusRule *prometheus.PrometheusRule) bool {
 	if value, ok := prometheusRule.Labels[utils.TrackPrometheusRuleRecordingRulesLabelKey]; ok && value == "true" {
 		return true
 	}
+	if value, ok := prometheusRule.Labels[utils.KubernetesComponentLabelKey]; ok && value == utils.KubernetesComponentSLO {
+		return true
+	}
 	return false
 }
 
@@ -351,10 +358,66 @@ func shouldTrackAlerts(prometheusRule *prometheus.PrometheusRule) bool {
 	if value, ok := prometheusRule.Labels[utils.TrackPrometheusRuleAlertsLabelKey]; ok && value == "true" {
 		return true
 	}
+	if value, ok := prometheusRule.Labels[utils.KubernetesComponentLabelKey]; ok && value == utils.KubernetesComponentSLO {
+		return true
+	}
 	return false
 }
 
 func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.AlertSpec {
+	var notificationPeriod int
+	var integrationNamePointer *string
+
+	integrationName, ok := rule.Annotations["cxIntegrationName"]
+	if !ok {
+		integrationNamePointer = nil
+	} else {
+		integrationNamePointer = &integrationName
+	}
+	if cxNotifyEveryMin, ok := rule.Annotations["cxNotifyEveryMin"]; ok {
+		notificationPeriod, _ = strconv.Atoi(cxNotifyEveryMin)
+	} else {
+		duration, _ := time.ParseDuration(string(rule.For))
+		notificationPeriod = int(duration.Minutes())
+	}
+
+	if notificationPeriod == 0 {
+		notificationPeriod = int(defaultCoralogixNotificationPeriod)
+	}
+
+	notifications := []coralogixv1alpha1.Notification{
+		{
+			RetriggeringPeriodMinutes: int32(notificationPeriod),
+			IntegrationName:           integrationNamePointer,
+		},
+	}
+
+	notifyOnV1alpha1ToV1beta1 := map[v1alpha1.NotifyOn]v1beta1.NotifyOn{
+		v1alpha1.NotifyOnTriggeredOnly:        v1beta1.NotifyOnTriggeredOnly,
+		v1alpha1.NotifyOnTriggeredAndResolved: v1beta1.NotifyOnTriggeredAndResolved,
+	}
+
+	webhooks := make([]v1beta1.WebhookSettings, len(notifications))
+	for i, notification := range notifications {
+		webhooks[i] = v1beta1.WebhookSettings{
+			RetriggeringPeriod: v1beta1.RetriggeringPeriod{
+				Minutes: pointer.Uint32((uint32)(notification.RetriggeringPeriodMinutes)),
+			},
+			NotifyOn: notifyOnV1alpha1ToV1beta1[notification.NotifyOn],
+			Integration: v1beta1.IntegrationType{
+				IntegrationRef: &v1beta1.IntegrationRef{
+					BackendRef: &v1beta1.OutboundWebhookBackendRef{
+						Name: integrationNamePointer,
+					},
+				},
+			},
+		}
+	}
+
+	notificationGroup := &v1beta1.NotificationGroup{
+		Webhooks: webhooks,
+	}
+
 	return coralogixv1beta1.AlertSpec{
 		Name:         rule.Alert,
 		Description:  rule.Annotations["description"],
@@ -363,6 +426,7 @@ func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.A
 		TypeDefinition: coralogixv1beta1.AlertTypeDefinition{
 			MetricThreshold: prometheusAlertToMetricThreshold(*rule),
 		},
+		NotificationGroup: notificationGroup,
 	}
 }
 
