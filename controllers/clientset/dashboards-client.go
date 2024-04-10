@@ -6,6 +6,14 @@ import (
 	dashboards "github.com/coralogix/coralogix-operator/controllers/clientset/grpc/coralogix-dashboards/v1"
 )
 
+//go:generate mockgen -destination=../mock_clientset/mock_dashboards-client.go -package=mock_clientset github.com/coralogix/coralogix-operator/controllers/clientset DashboardsClientInterface
+type DashboardsClientInterface interface {
+	CreateDashboard(ctx context.Context, req *dashboards.CreateDashboardRequest) (*dashboards.CreateDashboardResponse, error)
+	GetDashboard(ctx context.Context, req *dashboards.GetDashboardRequest) (*dashboards.GetDashboardResponse, error)
+	UpdateDashboard(ctx context.Context, req *dashboards.ReplaceDashboardRequest) (*dashboards.ReplaceDashboardResponse, error)
+	DeleteDashboard(ctx context.Context, req *dashboards.DeleteDashboardRequest) (*dashboards.DeleteDashboardResponse, error)
+}
+
 type DashboardsClient struct {
 	callPropertiesCreator *CallPropertiesCreator
 }

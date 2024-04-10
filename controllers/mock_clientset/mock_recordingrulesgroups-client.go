@@ -5,6 +5,7 @@
 //
 //	mockgen -destination=../mock_clientset/mock_recordingrulesgroups-client.go -package=mock_clientset github.com/coralogix/coralogix-operator/controllers/clientset RecordingRulesGroupsClientInterface
 //
+
 // Package mock_clientset is a generated GoMock package.
 package mock_clientset
 

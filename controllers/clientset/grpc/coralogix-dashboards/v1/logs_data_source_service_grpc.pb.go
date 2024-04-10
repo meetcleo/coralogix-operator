@@ -8,7 +8,6 @@ package v1
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -25,6 +24,10 @@ const _ = grpc.SupportPackageIsVersion7
 type LogsDataSourceServiceClient interface {
 	SearchLogsTimeSeries(ctx context.Context, in *SearchLogsTimeSeriesRequest, opts ...grpc.CallOption) (*SearchLogsTimeSeriesResponse, error)
 	SearchLogsEvents(ctx context.Context, in *SearchLogsEventsRequest, opts ...grpc.CallOption) (*SearchLogsEventsResponse, error)
+	SearchGroupedLogsSeries(ctx context.Context, in *SearchGroupedLogsSeriesRequest, opts ...grpc.CallOption) (*SearchGroupedLogsSeriesResponse, error)
+	SearchLogsGroupedTimeSeries(ctx context.Context, in *SearchLogsGroupedTimeSeriesRequest, opts ...grpc.CallOption) (*SearchLogsGroupedTimeSeriesResponse, error)
+	SearchLogsEventGroups(ctx context.Context, in *SearchLogsEventGroupsRequest, opts ...grpc.CallOption) (*SearchLogsEventGroupsResponse, error)
+	SearchLogsTimeValue(ctx context.Context, in *SearchLogsTimeValueRequest, opts ...grpc.CallOption) (*SearchLogsTimeValueResponse, error)
 }
 
 type logsDataSourceServiceClient struct {
@@ -53,12 +56,52 @@ func (c *logsDataSourceServiceClient) SearchLogsEvents(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *logsDataSourceServiceClient) SearchGroupedLogsSeries(ctx context.Context, in *SearchGroupedLogsSeriesRequest, opts ...grpc.CallOption) (*SearchGroupedLogsSeriesResponse, error) {
+	out := new(SearchGroupedLogsSeriesResponse)
+	err := c.cc.Invoke(ctx, "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchGroupedLogsSeries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logsDataSourceServiceClient) SearchLogsGroupedTimeSeries(ctx context.Context, in *SearchLogsGroupedTimeSeriesRequest, opts ...grpc.CallOption) (*SearchLogsGroupedTimeSeriesResponse, error) {
+	out := new(SearchLogsGroupedTimeSeriesResponse)
+	err := c.cc.Invoke(ctx, "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchLogsGroupedTimeSeries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logsDataSourceServiceClient) SearchLogsEventGroups(ctx context.Context, in *SearchLogsEventGroupsRequest, opts ...grpc.CallOption) (*SearchLogsEventGroupsResponse, error) {
+	out := new(SearchLogsEventGroupsResponse)
+	err := c.cc.Invoke(ctx, "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchLogsEventGroups", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logsDataSourceServiceClient) SearchLogsTimeValue(ctx context.Context, in *SearchLogsTimeValueRequest, opts ...grpc.CallOption) (*SearchLogsTimeValueResponse, error) {
+	out := new(SearchLogsTimeValueResponse)
+	err := c.cc.Invoke(ctx, "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchLogsTimeValue", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LogsDataSourceServiceServer is the server API for LogsDataSourceService service.
 // All implementations must embed UnimplementedLogsDataSourceServiceServer
 // for forward compatibility
 type LogsDataSourceServiceServer interface {
 	SearchLogsTimeSeries(context.Context, *SearchLogsTimeSeriesRequest) (*SearchLogsTimeSeriesResponse, error)
 	SearchLogsEvents(context.Context, *SearchLogsEventsRequest) (*SearchLogsEventsResponse, error)
+	SearchGroupedLogsSeries(context.Context, *SearchGroupedLogsSeriesRequest) (*SearchGroupedLogsSeriesResponse, error)
+	SearchLogsGroupedTimeSeries(context.Context, *SearchLogsGroupedTimeSeriesRequest) (*SearchLogsGroupedTimeSeriesResponse, error)
+	SearchLogsEventGroups(context.Context, *SearchLogsEventGroupsRequest) (*SearchLogsEventGroupsResponse, error)
+	SearchLogsTimeValue(context.Context, *SearchLogsTimeValueRequest) (*SearchLogsTimeValueResponse, error)
 	mustEmbedUnimplementedLogsDataSourceServiceServer()
 }
 
@@ -71,6 +114,18 @@ func (UnimplementedLogsDataSourceServiceServer) SearchLogsTimeSeries(context.Con
 }
 func (UnimplementedLogsDataSourceServiceServer) SearchLogsEvents(context.Context, *SearchLogsEventsRequest) (*SearchLogsEventsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchLogsEvents not implemented")
+}
+func (UnimplementedLogsDataSourceServiceServer) SearchGroupedLogsSeries(context.Context, *SearchGroupedLogsSeriesRequest) (*SearchGroupedLogsSeriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchGroupedLogsSeries not implemented")
+}
+func (UnimplementedLogsDataSourceServiceServer) SearchLogsGroupedTimeSeries(context.Context, *SearchLogsGroupedTimeSeriesRequest) (*SearchLogsGroupedTimeSeriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchLogsGroupedTimeSeries not implemented")
+}
+func (UnimplementedLogsDataSourceServiceServer) SearchLogsEventGroups(context.Context, *SearchLogsEventGroupsRequest) (*SearchLogsEventGroupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchLogsEventGroups not implemented")
+}
+func (UnimplementedLogsDataSourceServiceServer) SearchLogsTimeValue(context.Context, *SearchLogsTimeValueRequest) (*SearchLogsTimeValueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchLogsTimeValue not implemented")
 }
 func (UnimplementedLogsDataSourceServiceServer) mustEmbedUnimplementedLogsDataSourceServiceServer() {}
 
@@ -121,6 +176,78 @@ func _LogsDataSourceService_SearchLogsEvents_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LogsDataSourceService_SearchGroupedLogsSeries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchGroupedLogsSeriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogsDataSourceServiceServer).SearchGroupedLogsSeries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchGroupedLogsSeries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogsDataSourceServiceServer).SearchGroupedLogsSeries(ctx, req.(*SearchGroupedLogsSeriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogsDataSourceService_SearchLogsGroupedTimeSeries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchLogsGroupedTimeSeriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogsDataSourceServiceServer).SearchLogsGroupedTimeSeries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchLogsGroupedTimeSeries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogsDataSourceServiceServer).SearchLogsGroupedTimeSeries(ctx, req.(*SearchLogsGroupedTimeSeriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogsDataSourceService_SearchLogsEventGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchLogsEventGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogsDataSourceServiceServer).SearchLogsEventGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchLogsEventGroups",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogsDataSourceServiceServer).SearchLogsEventGroups(ctx, req.(*SearchLogsEventGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogsDataSourceService_SearchLogsTimeValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchLogsTimeValueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogsDataSourceServiceServer).SearchLogsTimeValue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/com.coralogixapis.dashboards.v1.services.LogsDataSourceService/SearchLogsTimeValue",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogsDataSourceServiceServer).SearchLogsTimeValue(ctx, req.(*SearchLogsTimeValueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LogsDataSourceService_ServiceDesc is the grpc.ServiceDesc for LogsDataSourceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -135,6 +262,22 @@ var LogsDataSourceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchLogsEvents",
 			Handler:    _LogsDataSourceService_SearchLogsEvents_Handler,
+		},
+		{
+			MethodName: "SearchGroupedLogsSeries",
+			Handler:    _LogsDataSourceService_SearchGroupedLogsSeries_Handler,
+		},
+		{
+			MethodName: "SearchLogsGroupedTimeSeries",
+			Handler:    _LogsDataSourceService_SearchLogsGroupedTimeSeries_Handler,
+		},
+		{
+			MethodName: "SearchLogsEventGroups",
+			Handler:    _LogsDataSourceService_SearchLogsEventGroups_Handler,
+		},
+		{
+			MethodName: "SearchLogsTimeValue",
+			Handler:    _LogsDataSourceService_SearchLogsTimeValue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

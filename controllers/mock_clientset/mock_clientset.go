@@ -5,6 +5,7 @@
 //
 //	mockgen -destination=../mock_clientset/mock_clientset.go -package=mock_clientset github.com/coralogix/coralogix-operator/controllers/clientset ClientSetInterface
 //
+
 // Package mock_clientset is a generated GoMock package.
 package mock_clientset
 
@@ -50,6 +51,20 @@ func (m *MockClientSetInterface) Alerts() clientset.AlertsClientInterface {
 func (mr *MockClientSetInterfaceMockRecorder) Alerts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alerts", reflect.TypeOf((*MockClientSetInterface)(nil).Alerts))
+}
+
+// Dashboards mocks base method.
+func (m *MockClientSetInterface) Dashboards() clientset.DashboardsClientInterface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Dashboards")
+	ret0, _ := ret[0].(clientset.DashboardsClientInterface)
+	return ret0
+}
+
+// Dashboards indicates an expected call of Dashboards.
+func (mr *MockClientSetInterfaceMockRecorder) Dashboards() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dashboards", reflect.TypeOf((*MockClientSetInterface)(nil).Dashboards))
 }
 
 // RecordingRuleGroups mocks base method.

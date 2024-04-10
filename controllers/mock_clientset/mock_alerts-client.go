@@ -5,6 +5,7 @@
 //
 //	mockgen -destination=../mock_clientset/mock_alerts-client.go -package=mock_clientset github.com/coralogix/coralogix-operator/controllers/clientset AlertsClientInterface
 //
+
 // Package mock_clientset is a generated GoMock package.
 package mock_clientset
 

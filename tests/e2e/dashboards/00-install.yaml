@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-dashboard
+  labels:
+    app.coralogix.com/dashboard: "true"
+data:
+  contentJson: |-
+    {
+      "name": "Test",
+      "id": "9aa496db-2d1f-0dcc-700b-ea46a8430722",
+      "layout": {
+        "sections": [
+          {"id": {"value": "57286490-c3c9-440b-daf6-9a6e450221a4"}, "rows": []}
+        ]
+      },
+      "variables": [],
+      "filters": [
+        {
+          "source": {
+            "logs": {
+              "operator": {"equals": {"selection": {"list": {"values": []}}}},
+              "observationField": {
+                "keypath": ["applicationname"],
+                "scope": "DATASET_SCOPE_LABEL"
+              }
+            }
+          },
+          "enabled": true,
+          "collapsed": false
+        },
+        {
+          "source": {
+            "logs": {
+              "operator": {"equals": {"selection": {"list": {"values": []}}}},
+              "observationField": {
+                "keypath": ["subsystemname"],
+                "scope": "DATASET_SCOPE_LABEL"
+              }
+            }
+          },
+          "enabled": true,
+          "collapsed": false
+        }
+      ],
+      "relativeTimeFrame": "900s",
+      "annotations": [],
+      "off": {},
+      "folderPath": {"segments": ["Test"]}
+    }

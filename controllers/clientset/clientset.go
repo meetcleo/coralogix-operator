@@ -6,6 +6,7 @@ type ClientSetInterface interface {
 	Alerts() AlertsClientInterface
 	RecordingRuleGroups() RecordingRulesGroupsClientInterface
 	Webhooks() WebhooksClientInterface
+	Dashboards() DashboardsClientInterface
 }
 
 type ClientSet struct {
@@ -13,6 +14,7 @@ type ClientSet struct {
 	alerts              *AlertsClient
 	recordingRuleGroups *RecordingRulesGroupsClient
 	webhooks            *WebhooksClient
+	dashboards          *DashboardsClient
 }
 
 func (c *ClientSet) RuleGroups() RuleGroupsClientInterface {
@@ -31,6 +33,10 @@ func (c *ClientSet) RecordingRuleGroups() RecordingRulesGroupsClientInterface {
 	return c.recordingRuleGroups
 }
 
+func (c *ClientSet) Dashboards() DashboardsClientInterface {
+	return c.dashboards
+}
+
 func NewClientSet(targetUrl, apiKey string) ClientSetInterface {
 	apikeyCPC := NewCallPropertiesCreator(targetUrl, apiKey)
 
@@ -39,5 +45,6 @@ func NewClientSet(targetUrl, apiKey string) ClientSetInterface {
 		alerts:              NewAlertsClient(apikeyCPC),
 		recordingRuleGroups: NewRecordingRuleGroupsClient(apikeyCPC),
 		webhooks:            NewWebhooksClient(apikeyCPC),
+		dashboards:          NewDashboardsClient(apikeyCPC),
 	}
 }
