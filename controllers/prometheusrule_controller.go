@@ -77,33 +77,41 @@ func (r *PrometheusRuleReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 						UID:        prometheusRuleCRD.UID,
 					},
 				}
-				if err = r.Create(ctx, ruleGroupSetCRD); err != nil {
-					log.Error(err, "Received an error while trying to create RecordingRuleGroupSet CRD", "RecordingRuleGroupSet Name", ruleGroupSetCRD.Name)
-					return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+				if ruleGroupSetCRD.Spec.Groups != nil {
+					if err = r.Create(ctx, ruleGroupSetCRD); err != nil {
+						log.Error(err, "Received an error while trying to create RecordingRuleGroupSet CRD", "RecordingRuleGroupSet Name", ruleGroupSetCRD.Name)
+						return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+					}
 				}
 
 			} else {
 				return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
 			}
-		}
+		} else {
+			//Converting the PrometheusRule to the desired RecordingRuleGroupSet.
+			var err error
+			if ruleGroupSetCRD.Spec, err = prometheusRuleToRuleGroupSet(prometheusRuleCRD); err != nil {
+				log.Error(err, "Received an error while Converting PrometheusRule to RecordingRuleGroupSet", "PrometheusRule Name", prometheusRuleCRD.Name)
+				return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+			}
+			ruleGroupSetCRD.OwnerReferences = []metav1.OwnerReference{
+				{
+					APIVersion: prometheusRuleCRD.APIVersion,
+					Kind:       prometheusRuleCRD.Kind,
+					Name:       prometheusRuleCRD.Name,
+					UID:        prometheusRuleCRD.UID,
+				},
+			}
 
-		//Converting the PrometheusRule to the desired RecordingRuleGroupSet.
-		var err error
-		if ruleGroupSetCRD.Spec, err = prometheusRuleToRuleGroupSet(prometheusRuleCRD); err != nil {
-			log.Error(err, "Received an error while Converting PrometheusRule to RecordingRuleGroupSet", "PrometheusRule Name", prometheusRuleCRD.Name)
-			return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
-		}
-		ruleGroupSetCRD.OwnerReferences = []metav1.OwnerReference{
-			{
-				APIVersion: prometheusRuleCRD.APIVersion,
-				Kind:       prometheusRuleCRD.Kind,
-				Name:       prometheusRuleCRD.Name,
-				UID:        prometheusRuleCRD.UID,
-			},
-		}
-
-		if err = r.Client.Update(ctx, ruleGroupSetCRD); err != nil {
-			return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+			if ruleGroupSetCRD.Spec.Groups != nil {
+				if err = r.Client.Update(ctx, ruleGroupSetCRD); err != nil {
+					return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+				}
+			} else {
+				if err = r.Client.Delete(ctx, ruleGroupSetCRD); err != nil {
+					return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+				}
+			}
 		}
 	}
 
@@ -176,17 +184,24 @@ func (r *PrometheusRuleReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					} else {
 						return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
 					}
-				}
-
-				//Converting the PrometheusRule to the desired Alert.
-				alertCRD.Spec = prometheusInnerRuleToCoralogixAlert(rule)
-				alertCRD.OwnerReferences = []metav1.OwnerReference{
-					{
-						APIVersion: prometheusRuleCRD.APIVersion,
-						Kind:       prometheusRuleCRD.Kind,
-						Name:       prometheusRuleCRD.Name,
-						UID:        prometheusRuleCRD.UID,
-					},
+				} else {
+					//Converting the PrometheusRule to the desired Alert.
+					alertCRD.Spec = prometheusInnerRuleToCoralogixAlert(rule)
+					alertCRD.Namespace = req.Namespace
+					alertCRD.Name = req.Name
+					alertCRD.OwnerReferences = []metav1.OwnerReference{
+						{
+							APIVersion: prometheusRuleCRD.APIVersion,
+							Kind:       prometheusRuleCRD.Kind,
+							Name:       prometheusRuleCRD.Name,
+							UID:        prometheusRuleCRD.UID,
+						},
+					}
+					alertCRD.Labels = map[string]string{"app.kubernetes.io/managed-by": prometheusRuleCRD.Name}
+					if err := r.Update(ctx, alertCRD); err != nil {
+						log.Error(err, "Received an error while trying to update Alert CRD", "Alert Name", alertCRD.Name)
+						return ctrl.Result{RequeueAfter: defaultErrRequeuePeriod}, err
+					}
 				}
 			}
 		}
@@ -235,25 +250,31 @@ func prometheusRuleToRuleGroupSet(prometheusRule *prometheus.PrometheusRule) (co
 	for _, group := range prometheusRule.Spec.Groups {
 		rules := prometheusInnerRulesToCoralogixInnerRules(group.Rules)
 
-		ruleGroup := coralogixv1alpha1.RecordingRuleGroup{
-			Name:  group.Name,
-			Rules: rules,
-		}
-
-		if interval := string(group.Interval); interval != "" {
-			if duration, err := time.ParseDuration(interval); err != nil {
-				return coralogixv1alpha1.RecordingRuleGroupSetSpec{}, err
-			} else {
-				ruleGroup.IntervalSeconds = int32(duration.Seconds())
+		if len(rules) > 0 {
+			ruleGroup := coralogixv1alpha1.RecordingRuleGroup{
+				Name:  group.Name,
+				Rules: rules,
 			}
-		}
 
-		groups = append(groups, ruleGroup)
+			if interval := string(group.Interval); interval != "" {
+				if duration, err := time.ParseDuration(interval); err != nil {
+					return coralogixv1alpha1.RecordingRuleGroupSetSpec{}, err
+				} else {
+					ruleGroup.IntervalSeconds = int32(duration.Seconds())
+				}
+			}
+
+			groups = append(groups, ruleGroup)
+		}
 	}
 
-	return coralogixv1alpha1.RecordingRuleGroupSetSpec{
-		Groups: groups,
-	}, nil
+	if len(groups) > 0 {
+		return coralogixv1alpha1.RecordingRuleGroupSetSpec{
+			Groups: groups,
+		}, nil
+	} else {
+		return coralogixv1alpha1.RecordingRuleGroupSetSpec{}, nil
+	}
 }
 
 func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralogixv1alpha1.AlertSpec {
