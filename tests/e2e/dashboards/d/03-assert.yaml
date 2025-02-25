@@ -1,0 +1,624 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entity-features
+  labels:
+    app.coralogix.com/dashboard: "true"
+    app.coralogix.com/dashboard_id: "8GjiebIdQM2VH0lKju3kJ"
+data:
+  contentJson: |-
+    {
+      "id": "8GjiebIdQM2VH0lKju3kJ",
+      "name": "RED Metrics (Entity Features / Feature Store)",
+      "layout": {
+        "sections": [
+          {
+            "id": {
+              "value": "56adbf45-b5cc-4c31-9dc6-de2ef89da16e"
+            },
+            "rows": [
+              {
+                "id": {
+                  "value": "1c6a8b5a-771e-4151-9f2c-3d11af901c9a"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "fc2c09a2-cbaa-40e3-a828-12eb6d7a4a87"
+                    },
+                    "title": "Entity Feature Calls",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "11393abe-971a-443c-8ae7-4779a4f73123",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "sum(feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=~\"{{hit_in_memory_cache}}\"})"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesNameTemplate": "Total",
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_UNSPECIFIED",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": {
+                  "value": "c5ed5d94-60b2-4169-a6da-b1ae3c34a4ec"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "ff90b928-55db-4f09-a4cf-a88a21112afd"
+                    },
+                    "title": "Total Entity Feature Calls (by feature)",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "fe3e35d0-2a56-496b-a353-b58b9d724e97",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "topk(20, sum(feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=~\"{{hit_in_memory_cache}}\"}) by (feature))"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_UNSPECIFIED",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": {
+                  "value": "9241f675-3a6d-4238-bfd5-48143165590c"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "21f2c48c-607d-4395-ba60-643cd8fedb11"
+                    },
+                    "title": "Total Entity Feature Calls (by cache hit)",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "2067ebad-4a4b-4cb8-acee-b4c035bbf885",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "sum(feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=~\"{{hit_in_memory_cache}}\"}) by (hit_in_memory_cache)"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_UNSPECIFIED",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "options": {
+              "custom": {
+                "name": "Throughput",
+                "collapsed": false,
+                "color": {
+                  "predefined": "SECTION_PREDEFINED_COLOR_UNSPECIFIED"
+                }
+              }
+            }
+          },
+          {
+            "id": {
+              "value": "e54ad2e6-467d-405c-8fbf-a68c69fc6640"
+            },
+            "rows": [
+              {
+                "id": {
+                  "value": "676e4ff7-f075-4307-b432-d39e4f2d2876"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "37ec30ce-fca8-4567-a477-047683da1d7c"
+                    },
+                    "title": "p50 Total Entity Feature Calls (by feature)",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "d854e56d-fb38-442b-80e4-8de2a3939760",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "topk(20, histogram_quantile(0.5, sum by (le, feature) (feature_computed_feature_store_bucket{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=~\"{{hit_in_memory_cache}}\"}[90s])))"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_MILLISECONDS",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": {
+                  "value": "44626d02-e1d3-44d4-ae30-f087852e4a4c"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "ce0e6186-489e-409d-98f1-c12aeeee6550"
+                    },
+                    "title": "p95 Total Entity Feature Calls (by feature)",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "ec86067f-b230-462f-b70d-77ac4dc00a74",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "topk(20, histogram_quantile(0.95, sum by (le, feature) (feature_computed_feature_store_bucket{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=~\"{{hit_in_memory_cache}}\"}[90s])))"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_MILLISECONDS",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "options": {
+              "custom": {
+                "name": "Duration",
+                "collapsed": false,
+                "color": {
+                  "predefined": "SECTION_PREDEFINED_COLOR_UNSPECIFIED"
+                }
+              }
+            }
+          },
+          {
+            "id": {
+              "value": "7d5a60dc-262f-4283-89b0-f89a842cf1d8"
+            },
+            "rows": [
+              {
+                "id": {
+                  "value": "5ecde35b-cce0-4f00-9f71-bf3ce128ebe4"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "12a59cc2-a3f2-458e-8e72-17f16b1a228b"
+                    },
+                    "title": "In-Memory Overall Cache Hit Ratio",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "2ed8cae2-10d5-4109-a4cc-d5197cf32a48",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "sum(feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=\"true\"}) /\nsum(feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\"})"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesNameTemplate": "Overall",
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_PERCENT_ZERO_ONE",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": {
+                  "value": "f23cb1f6-7069-4d31-a6ec-1bc949bbfce3"
+                },
+                "appearance": {
+                  "height": 19
+                },
+                "widgets": [
+                  {
+                    "id": {
+                      "value": "e59091e2-7339-4a3e-b352-397ca589c76a"
+                    },
+                    "title": "In-Memory Cache Hit Ratio (by feature)",
+                    "definition": {
+                      "lineChart": {
+                        "legend": {
+                          "isVisible": true,
+                          "columns": [],
+                          "groupByQuery": true
+                        },
+                        "tooltip": {
+                          "showLabels": false,
+                          "type": "TOOLTIP_TYPE_ALL"
+                        },
+                        "queryDefinitions": [
+                          {
+                            "id": "a740c80b-8a3a-46ce-8c7d-1f4d541c0c97",
+                            "query": {
+                              "metrics": {
+                                "promqlQuery": {
+                                  "value": "sum by (feature) (feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\", hit_in_memory_cache=\"true\"}) /\nsum by (feature) (feature_computed_feature_store_count{__meta_applicationname=\"{{__meta_applicationname}}\", __meta_subsystem=~\"{{__meta_subsystem}}\", feature=~\"{{feature}}\"})"
+                                },
+                                "filters": [],
+                                "editorMode": "METRICS_QUERY_EDITOR_MODE_TEXT"
+                              }
+                            },
+                            "seriesCountLimit": "20",
+                            "unit": "UNIT_PERCENT_ZERO_ONE",
+                            "scaleType": "SCALE_TYPE_LINEAR",
+                            "name": "Query 1",
+                            "isVisible": true,
+                            "colorScheme": "classic",
+                            "resolution": {
+                              "bucketsPresented": 96
+                            },
+                            "dataModeType": "DATA_MODE_TYPE_HIGH_UNSPECIFIED",
+                            "customUnit": "",
+                            "decimal": 2
+                          }
+                        ],
+                        "stackedLine": "STACKED_LINE_UNSPECIFIED"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "options": {
+              "custom": {
+                "name": "Cache Hits",
+                "collapsed": false,
+                "color": {
+                  "predefined": "SECTION_PREDEFINED_COLOR_UNSPECIFIED"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "variables": [
+        {
+          "name": "__meta_applicationname",
+          "definition": {
+            "multiSelect": {
+              "selected": [],
+              "source": {
+                "query": {
+                  "query": {
+                    "metricsQuery": {
+                      "type": {
+                        "labelValue": {
+                          "metricName": {
+                            "stringValue": "feature_computed_feature_store_bucket"
+                          },
+                          "labelName": {
+                            "stringValue": "__meta_applicationname"
+                          },
+                          "labelFilters": []
+                        }
+                      }
+                    }
+                  },
+                  "refreshStrategy": "REFRESH_STRATEGY_UNSPECIFIED",
+                  "valueDisplayOptions": {}
+                }
+              },
+              "selection": {
+                "list": {
+                  "values": [
+                    "cleo-production-private"
+                  ],
+                  "labels": [
+                    "cleo-production-private"
+                  ]
+                }
+              },
+              "valuesOrderDirection": "ORDER_DIRECTION_ASC",
+              "selectionOptions": {
+                "selectionType": "SELECTION_TYPE_SINGLE"
+              }
+            }
+          },
+          "displayName": "Application Name",
+          "displayType": "VARIABLE_DISPLAY_TYPE_UNSPECIFIED"
+        },
+        {
+          "name": "__meta_subsystem",
+          "definition": {
+            "multiSelect": {
+              "selected": [],
+              "source": {
+                "query": {
+                  "query": {
+                    "metricsQuery": {
+                      "type": {
+                        "labelValue": {
+                          "metricName": {
+                            "stringValue": "feature_computed_feature_store_bucket"
+                          },
+                          "labelName": {
+                            "stringValue": "__meta_subsystem"
+                          },
+                          "labelFilters": []
+                        }
+                      }
+                    }
+                  },
+                  "refreshStrategy": "REFRESH_STRATEGY_UNSPECIFIED",
+                  "valueDisplayOptions": {}
+                }
+              },
+              "selection": {
+                "all": {}
+              },
+              "valuesOrderDirection": "ORDER_DIRECTION_ASC",
+              "selectionOptions": {
+                "selectionType": "SELECTION_TYPE_MULTI_ALL"
+              }
+            }
+          },
+          "displayName": "Subsystem",
+          "displayType": "VARIABLE_DISPLAY_TYPE_UNSPECIFIED"
+        },
+        {
+          "name": "feature",
+          "definition": {
+            "multiSelect": {
+              "selected": [],
+              "source": {
+                "query": {
+                  "query": {
+                    "metricsQuery": {
+                      "type": {
+                        "labelValue": {
+                          "metricName": {
+                            "stringValue": "feature_computed_feature_store_bucket"
+                          },
+                          "labelName": {
+                            "stringValue": "feature"
+                          },
+                          "labelFilters": []
+                        }
+                      }
+                    }
+                  },
+                  "refreshStrategy": "REFRESH_STRATEGY_UNSPECIFIED",
+                  "valueDisplayOptions": {}
+                }
+              },
+              "selection": {
+                "all": {}
+              },
+              "valuesOrderDirection": "ORDER_DIRECTION_ASC",
+              "selectionOptions": {
+                "selectionType": "SELECTION_TYPE_MULTI_ALL"
+              }
+            }
+          },
+          "displayName": "Feature",
+          "displayType": "VARIABLE_DISPLAY_TYPE_UNSPECIFIED"
+        },
+        {
+          "name": "hit_in_memory_cache",
+          "definition": {
+            "multiSelect": {
+              "selected": [],
+              "source": {
+                "query": {
+                  "query": {
+                    "metricsQuery": {
+                      "type": {
+                        "labelValue": {
+                          "metricName": {
+                            "stringValue": "feature_computed_feature_store_bucket"
+                          },
+                          "labelName": {
+                            "stringValue": "hit_in_memory_cache"
+                          },
+                          "labelFilters": []
+                        }
+                      }
+                    }
+                  },
+                  "refreshStrategy": "REFRESH_STRATEGY_UNSPECIFIED",
+                  "valueDisplayOptions": {}
+                }
+              },
+              "selection": {
+                "all": {}
+              },
+              "valuesOrderDirection": "ORDER_DIRECTION_ASC",
+              "selectionOptions": {
+                "selectionType": "SELECTION_TYPE_MULTI_ALL"
+              }
+            }
+          },
+          "displayName": "Memory Cache Hit",
+          "displayType": "VARIABLE_DISPLAY_TYPE_UNSPECIFIED"
+        }
+      ],
+      "filters": [],
+      "relativeTimeFrame": "21600s",
+      "annotations": [],
+      "off": {}
+    }

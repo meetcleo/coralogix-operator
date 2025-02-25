@@ -2,7 +2,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - resources:
@@ -19,57 +18,7 @@ rules:
   - coralogix.com
   resources:
   - alerts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - coralogix.com
-  resources:
-  - alerts/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - coralogix.com
-  resources:
-  - alerts/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - coralogix.com
-  resources:
   - recordingrulegroupsets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - coralogix.com
-  resources:
-  - recordingrulegroupsets/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - coralogix.com
-  resources:
-  - recordingrulegroupsets/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - coralogix.com
-  resources:
   - rulegroups
   verbs:
   - create
@@ -82,12 +31,16 @@ rules:
 - apiGroups:
   - coralogix.com
   resources:
+  - alerts/finalizers
+  - recordingrulegroupsets/finalizers
   - rulegroups/finalizers
   verbs:
   - update
 - apiGroups:
   - coralogix.com
   resources:
+  - alerts/status
+  - recordingrulegroupsets/status
   - rulegroups/status
   verbs:
   - get
