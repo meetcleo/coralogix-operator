@@ -326,6 +326,8 @@ func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralog
 			severityLevel = coralogixv1alpha1.AlertSeverityError
 		case "critical":
 			severityLevel = coralogixv1alpha1.AlertSeverityCritical
+		default:
+			severityLevel = coralogixv1alpha1.AlertSeverityInfo
 		}
 	} else {
 		severityLevel = coralogixv1alpha1.AlertSeverityInfo
