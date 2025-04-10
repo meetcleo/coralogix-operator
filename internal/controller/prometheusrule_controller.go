@@ -366,8 +366,10 @@ func shouldTrackAlerts(prometheusRule *prometheus.PrometheusRule) bool {
 
 func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.AlertSpec {
 	var notificationPeriod int
+	var notifyToIncidentIo bool
 	var integrationNamePointer *string
 
+	incidentIoIntegrationName := "incident-io"
 	integrationName, ok := rule.Annotations["cxIntegrationName"]
 	if !ok {
 		integrationNamePointer = nil
@@ -385,11 +387,27 @@ func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.A
 		notificationPeriod = int(defaultCoralogixNotificationPeriod)
 	}
 
+	notifyToIncidentIoAnnotation, ok := rule.Annotations["notifyToIncidentIo"]
+	if !ok {
+		notifyToIncidentIo = false
+	} else {
+		if notifyToIncidentIoAnnotation == "on" || notifyToIncidentIoAnnotation == "true" {
+			notifyToIncidentIo = true
+		}
+	}
+
 	notifications := []coralogixv1alpha1.Notification{
 		{
 			RetriggeringPeriodMinutes: int32(notificationPeriod),
 			IntegrationName:           integrationNamePointer,
 		},
+	}
+
+	if notifyToIncidentIo {
+		notifications = append(notifications, coralogixv1alpha1.Notification{
+			RetriggeringPeriodMinutes: int32(notificationPeriod),
+			IntegrationName:           &incidentIoIntegrationName,
+		})
 	}
 
 	notifyOnV1alpha1ToV1beta1 := map[v1alpha1.NotifyOn]v1beta1.NotifyOn{
