@@ -528,6 +528,8 @@ func getPriority(rule prometheus.Rule) coralogixv1beta1.AlertPriority {
 	if severityStr, ok := rule.Labels["severity"]; ok && severityStr != "" {
 		severityStr = strings.ToUpper(severityStr[:1]) + strings.ToLower(severityStr[1:])
 		severity = coralogixv1alpha1.AlertSeverity(severityStr)
+	} else {
+		severity = coralogixv1alpha1.AlertSeverityInfo
 	}
 	return coralogixv1alpha1.SeveritiesV1alpha1ToV1beta1[severity]
 }
