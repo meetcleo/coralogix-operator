@@ -279,14 +279,26 @@ func prometheusRuleToRuleGroupSet(prometheusRule *prometheus.PrometheusRule) (co
 
 func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralogixv1alpha1.AlertSpec {
 	var notificationPeriod int
+	var notifyToIncidentIo bool
 	var integrationNamePointer *string
 	var severityLevel coralogixv1alpha1.AlertSeverity
+
+	incidentIoIntegrationName := "incident-io"
 
 	integrationName, ok := prometheusRule.Annotations["cxIntegrationName"]
 	if !ok {
 		integrationNamePointer = nil
 	} else {
 		integrationNamePointer = &integrationName
+	}
+
+	notifyToIncidentIoAnnotation, ok := prometheusRule.Annotations["notifyToIncidentIo"]
+	if !ok {
+		notifyToIncidentIo = false
+	} else {
+		if notifyToIncidentIoAnnotation == "on" || notifyToIncidentIoAnnotation == "true" {
+			notifyToIncidentIo = true
+		}
 	}
 	if cxNotifyEveryMin, ok := prometheusRule.Annotations["cxNotifyEveryMin"]; ok {
 		notificationPeriod, _ = strconv.Atoi(cxNotifyEveryMin)
@@ -314,21 +326,32 @@ func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralog
 			severityLevel = coralogixv1alpha1.AlertSeverityError
 		case "critical":
 			severityLevel = coralogixv1alpha1.AlertSeverityCritical
+		default:
+			severityLevel = coralogixv1alpha1.AlertSeverityInfo
 		}
 	} else {
 		severityLevel = coralogixv1alpha1.AlertSeverityInfo
+	}
+
+	notifications := []coralogixv1alpha1.Notification{
+		{
+			RetriggeringPeriodMinutes: int32(notificationPeriod),
+			IntegrationName:           integrationNamePointer,
+		},
+	}
+
+	if notifyToIncidentIo {
+		notifications = append(notifications, coralogixv1alpha1.Notification{
+			RetriggeringPeriodMinutes: int32(notificationPeriod),
+			IntegrationName:           &incidentIoIntegrationName,
+		})
 	}
 
 	return coralogixv1alpha1.AlertSpec{
 		Severity: severityLevel,
 		NotificationGroups: []coralogixv1alpha1.NotificationGroup{
 			{
-				Notifications: []coralogixv1alpha1.Notification{
-					{
-						RetriggeringPeriodMinutes: int32(notificationPeriod),
-						IntegrationName:           integrationNamePointer,
-					},
-				},
+				Notifications: notifications,
 			},
 		},
 		Name:   prometheusRule.Alert,
