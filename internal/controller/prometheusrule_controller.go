@@ -38,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/coralogix/coralogix-operator/api/coralogix/v1alpha1"
 	coralogixv1alpha1 "github.com/coralogix/coralogix-operator/api/coralogix/v1alpha1"
 	"github.com/coralogix/coralogix-operator/api/coralogix/v1beta1"
 	coralogixv1beta1 "github.com/coralogix/coralogix-operator/api/coralogix/v1beta1"
@@ -396,11 +395,12 @@ func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.A
 		}
 	}
 
-	notifications := []coralogixv1alpha1.Notification{
-		{
+	notifications := []coralogixv1alpha1.Notification{}
+	if integrationNamePointer != nil {
+		notifications = append(notifications, coralogixv1alpha1.Notification{
 			RetriggeringPeriodMinutes: int32(notificationPeriod),
 			IntegrationName:           integrationNamePointer,
-		},
+		})
 	}
 
 	if notifyToIncidentIo {
@@ -410,22 +410,17 @@ func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.A
 		})
 	}
 
-	notifyOnV1alpha1ToV1beta1 := map[v1alpha1.NotifyOn]v1beta1.NotifyOn{
-		v1alpha1.NotifyOnTriggeredOnly:        v1beta1.NotifyOnTriggeredOnly,
-		v1alpha1.NotifyOnTriggeredAndResolved: v1beta1.NotifyOnTriggeredAndResolved,
-	}
-
 	webhooks := make([]v1beta1.WebhookSettings, len(notifications))
 	for i, notification := range notifications {
 		webhooks[i] = v1beta1.WebhookSettings{
 			RetriggeringPeriod: v1beta1.RetriggeringPeriod{
 				Minutes: pointer.Uint32((uint32)(notification.RetriggeringPeriodMinutes)),
 			},
-			NotifyOn: notifyOnV1alpha1ToV1beta1[notification.NotifyOn],
+			NotifyOn: v1beta1.NotifyOnTriggeredAndResolved,
 			Integration: v1beta1.IntegrationType{
 				IntegrationRef: &v1beta1.IntegrationRef{
 					BackendRef: &v1beta1.OutboundWebhookBackendRef{
-						Name: integrationNamePointer,
+						Name: pointer.String(*notification.IntegrationName),
 					},
 				},
 			},

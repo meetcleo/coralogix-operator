@@ -1,0 +1,32 @@
+apiVersion: coralogix.com/v1alpha1
+kind: Dashboard
+metadata:
+  labels:
+    app.kubernetes.io/name: coralogix-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: dashboard-json-id
+spec:
+  json: >
+    {
+      "id": "Pj6PY81f6ncxqMJ32o68t",
+      "name": "New Dashbddoard",
+      "layout": {
+        "sections": [
+          {
+            "id": {
+              "value": "4ea22f76-d480-43f6-a73b-35ab88b47946"
+            },
+            "rows": [],
+            "options": {
+              "internal": {}
+            }
+          }
+        ]
+      },
+      "variables": [],
+      "filters": [],
+      "relativeTimeFrame": "900s",
+      "annotations": [],
+      "off": {},
+      "folderPath": {"segments": ["Test"]}
+    }

@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -66,9 +67,30 @@ func (r *DashboardReconciler) HandleCreation(ctx context.Context, log logr.Logge
 	if err != nil {
 		return fmt.Errorf("error on extracting dashboard from spec: %w", err)
 	}
+
+	if dashboardToCreate.Id != nil {
+		updateRequest := &cxsdk.ReplaceDashboardRequest{
+			Dashboard: dashboardToCreate,
+		}
+		log.Info("Try adopting and updating remote dashboard", "dashboard", protojson.Format(updateRequest))
+		updateResponse, err := r.DashboardsClient.Replace(ctx, updateRequest)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return fmt.Errorf("error on updating remote dashboard: %w", err)
+			}
+		} else {
+			log.Info("Remote dashboard updated", "dashboard", protojson.Format(updateResponse))
+			dashboard.Status = coralogixv1alpha1.DashboardStatus{
+				ID: pointer.String(dashboardToCreate.Id.GetValue()),
+			}
+			return nil
+		}
+	}
+
 	createRequest := &cxsdk.CreateDashboardRequest{
 		Dashboard: dashboardToCreate,
 	}
+
 	log.Info("Creating remote dashboard", "dashboard", protojson.Format(createRequest))
 	createResponse, err := r.DashboardsClient.Create(ctx, createRequest)
 	if err != nil {
