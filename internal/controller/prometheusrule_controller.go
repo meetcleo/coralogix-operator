@@ -510,6 +510,9 @@ func prometheusAlertToMetricThreshold(rule prometheus.Rule) *coralogixv1beta1.Me
 					},
 					ConditionType: coralogixv1beta1.MetricThresholdConditionTypeMoreThan,
 				},
+				Override: &v1beta1.AlertOverride{
+					Priority: getPriority(rule),
+				},
 			},
 		},
 		MissingValues: coralogixv1beta1.MetricMissingValues{
