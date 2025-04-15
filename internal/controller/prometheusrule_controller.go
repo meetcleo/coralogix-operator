@@ -523,7 +523,7 @@ func prometheusAlertToMetricThreshold(rule prometheus.Rule) *coralogixv1beta1.Me
 
 func getPriority(rule prometheus.Rule) coralogixv1beta1.AlertPriority {
 	severity := coralogixv1alpha1.AlertSeverityInfo
-	if severityStr, ok := rule.Labels["severity"]; ok && severityStr != "" {
+	if severityStr, ok := rule.Labels["severity"]; ok && severityStr != "" && severityStr != "none" {
 		severityStr = strings.ToUpper(severityStr[:1]) + strings.ToLower(severityStr[1:])
 		severity = coralogixv1alpha1.AlertSeverity(severityStr)
 	} else {
