@@ -420,7 +420,7 @@ func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.A
 			Integration: v1beta1.IntegrationType{
 				IntegrationRef: &v1beta1.IntegrationRef{
 					BackendRef: &v1beta1.OutboundWebhookBackendRef{
-						Name: pointer.String(*notification.IntegrationName),
+						Name: notification.IntegrationName,
 					},
 				},
 			},
@@ -527,7 +527,7 @@ func getPriority(rule prometheus.Rule) coralogixv1beta1.AlertPriority {
 		severityStr = strings.ToUpper(severityStr[:1]) + strings.ToLower(severityStr[1:])
 		severity = coralogixv1alpha1.AlertSeverity(severityStr)
 	} else {
-		severity = coralogixv1alpha1.AlertSeverityInfo
+		severity = coralogixv1alpha1.AlertSeverity(coralogixv1alpha1.AlertSeverityLow)
 	}
 	return coralogixv1alpha1.SeveritiesV1alpha1ToV1beta1[severity]
 }
