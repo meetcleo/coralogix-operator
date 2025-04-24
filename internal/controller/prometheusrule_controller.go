@@ -573,6 +573,9 @@ func (r *PrometheusRuleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		if value, ok := labels[utils.TrackPrometheusRuleAlertsLabelKey]; ok && value == "true" {
 			return true
 		}
+		if value, ok := labels[utils.KubernetesComponentLabelKey]; ok && value == utils.KubernetesComponentSLO {
+			return true
+		}
 		return false
 	}
 
