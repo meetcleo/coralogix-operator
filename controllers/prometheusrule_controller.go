@@ -333,11 +333,16 @@ func prometheusInnerRuleToCoralogixAlert(prometheusRule prometheus.Rule) coralog
 		severityLevel = coralogixv1alpha1.AlertSeverityInfo
 	}
 
-	notifications := []coralogixv1alpha1.Notification{
-		{
-			RetriggeringPeriodMinutes: int32(notificationPeriod),
-			IntegrationName:           integrationNamePointer,
-		},
+	var notifications []coralogixv1alpha1.Notification
+	if integrationNamePointer != nil {
+		notifications = []coralogixv1alpha1.Notification{
+			{
+				RetriggeringPeriodMinutes: int32(notificationPeriod),
+				IntegrationName:           integrationNamePointer,
+			},
+		}
+	} else {
+		notifications = []coralogixv1alpha1.Notification{}
 	}
 
 	if notifyToIncidentIo {
