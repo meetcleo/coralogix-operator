@@ -496,6 +496,14 @@ func prometheusInnerRulesToCoralogixInnerRules(rules []prometheus.Rule) []coralo
 }
 
 func prometheusAlertToMetricThreshold(rule prometheus.Rule) *coralogixv1beta1.MetricThreshold {
+	replaceWithZero := false
+	if cxReplaceWithZero, ok := rule.Annotations["cxReplaceWithZero"]; ok {
+		replaceWithZero, _ = strconv.ParseBool(cxReplaceWithZero)
+	}
+	minNonNullValuesPct := 0
+	if cxMinNonNullValuesPct, ok := rule.Annotations["cxMinNonNullValuesPct"]; ok {
+		minNonNullValuesPct, _ = strconv.Atoi(cxMinNonNullValuesPct)
+	}
 	return &coralogixv1beta1.MetricThreshold{
 		MetricFilter: coralogixv1beta1.MetricFilter{
 			Promql: rule.Expr.StrVal,
@@ -516,7 +524,8 @@ func prometheusAlertToMetricThreshold(rule prometheus.Rule) *coralogixv1beta1.Me
 			},
 		},
 		MissingValues: coralogixv1beta1.MetricMissingValues{
-			MinNonNullValuesPct: ptr.To(uint32(0)),
+			MinNonNullValuesPct: ptr.To(uint32(minNonNullValuesPct)),
+			ReplaceWithZero:     replaceWithZero,
 		},
 	}
 }
