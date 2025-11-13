@@ -59,7 +59,7 @@ func (r *RecordingRuleGroupSetReconciler) RequeueInterval() time.Duration {
 func (r *RecordingRuleGroupSetReconciler) HandleCreation(ctx context.Context, log logr.Logger, obj client.Object) error {
 	recordingRuleGroupSet := obj.(*coralogixv1alpha1.RecordingRuleGroupSet)
 	createRequest := &cxsdk.CreateRuleGroupSetRequest{
-		Name:   ptr.To(fmt.Sprintf("%s%s", recordingRuleGroupSet.Name, r.RecordingRuleGroupSetSuffix)),
+		Name:   ptr.To(fmt.Sprintf("%s-%s%s", recordingRuleGroupSet.Namespace, recordingRuleGroupSet.Name, r.RecordingRuleGroupSetSuffix)),
 		Groups: recordingRuleGroupSet.Spec.ExtractRecordingRuleGroups(),
 	}
 	log.Info("Creating remote recordingRuleGroupSet", "recordingRuleGroupSet", protojson.Format(createRequest))
