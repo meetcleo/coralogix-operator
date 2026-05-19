@@ -74,6 +74,22 @@ var _ = PDescribe("Enrichment", Ordered, func() {
 			resp, _, err := enrichmentsClient.EnrichmentServiceGetEnrichments(ctx).Execute()
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(resp.Enrichments).To(HaveLen(3))
+			assertBackendEnrichmentFieldOptions(
+				g,
+				resp.Enrichments,
+				"attributes.event.namespace",
+				"suspiciousIp",
+				"suspicious_ip_enriched",
+				[]string{"classification", "threat_score"},
+			)
+			assertBackendEnrichmentFieldOptions(
+				g,
+				resp.Enrichments,
+				"resource.attributes.service.name",
+				"geoIp",
+				"geo_ip_enriched",
+				[]string{"city", "country"},
+			)
 		}, time.Minute, time.Second).Should(Succeed())
 
 		By("Deleting the Enrichment")
@@ -98,13 +114,17 @@ func newEnrichmentFromSample(namespace string) *coralogixv1alpha1.Enrichment {
 			Enrichments: []coralogixv1alpha1.EnrichmentType{
 				{
 					SuspiciousIp: &coralogixv1alpha1.SuspiciousIpEnrichmentType{
-						FieldName: "attributes.event.namespace",
+						FieldName:         "attributes.event.namespace",
+						EnrichedFieldName: ptr.To("suspicious_ip_enriched"),
+						SelectedColumns:   []string{"classification", "threat_score"},
 					},
 				},
 				{
 					GeoIp: &coralogixv1alpha1.GeoIpEnrichmentType{
-						FieldName: "resource.attributes.service.name",
-						WithAsn:   ptr.To(true),
+						FieldName:         "resource.attributes.service.name",
+						EnrichedFieldName: ptr.To("geo_ip_enriched"),
+						SelectedColumns:   []string{"city", "country"},
+						WithAsn:           ptr.To(true),
 					},
 				},
 				{
@@ -120,6 +140,49 @@ func newEnrichmentFromSample(namespace string) *coralogixv1alpha1.Enrichment {
 			},
 		},
 	}
+}
+
+func assertBackendEnrichmentFieldOptions(
+	g Gomega,
+	enrichmentList []enrichments.Enrichment,
+	fieldName string,
+	enrichmentType string,
+	enrichedFieldName string,
+	selectedColumns []string,
+) {
+	for _, backendEnrichment := range enrichmentList {
+		if backendEnrichment.FieldName == fieldName && backendEnrichmentHasType(backendEnrichment, enrichmentType) {
+			g.Expect(backendEnrichment.EnrichedFieldName).ToNot(BeNil())
+			g.Expect(*backendEnrichment.EnrichedFieldName).To(Equal(enrichedFieldName))
+			g.Expect(backendEnrichment.SelectedColumns).To(ConsistOf(stringsToInterfaces(selectedColumns)...))
+			return
+		}
+	}
+
+	g.Expect(false).To(BeTrue(), "expected backend enrichment with fieldName %q and type %q", fieldName, enrichmentType)
+}
+
+func backendEnrichmentHasType(backendEnrichment enrichments.Enrichment, enrichmentType string) bool {
+	switch enrichmentType {
+	case "suspiciousIp":
+		return backendEnrichment.EnrichmentType.EnrichmentTypeSuspiciousIp != nil
+	case "geoIp":
+		return backendEnrichment.EnrichmentType.EnrichmentTypeGeoIp != nil
+	case "customEnrichment":
+		return backendEnrichment.EnrichmentType.EnrichmentTypeCustomEnrichment != nil
+	case "aws":
+		return backendEnrichment.EnrichmentType.EnrichmentTypeAws != nil
+	default:
+		return false
+	}
+}
+
+func stringsToInterfaces(values []string) []interface{} {
+	result := make([]interface{}, len(values))
+	for i, value := range values {
+		result[i] = value
+	}
+	return result
 }
 
 func newCSVCustomEnrichment(namespace string) *coralogixv1alpha1.CustomEnrichment {
