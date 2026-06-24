@@ -11,3 +11,38 @@ metadata:
     - apiVersion: monitoring.coreos.com/v1
       kind: PrometheusRule
       name: prometheus-example-rules
+---
+apiVersion: coralogix.com/v1beta1
+kind: Alert
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: prometheus-example-rules
+  name: prometheus-example-rules-app-latency-notify-0
+  namespace: default
+  ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      kind: PrometheusRule
+      name: prometheus-example-rules
+spec:
+  priority: p5
+  notificationGroup:
+    webhooks:
+      - retriggeringPeriod:
+          minutes: 5
+        notifyOn: triggeredAndResolved
+        integration:
+          integrationRef:
+            backendRef:
+              name: test
+      - retriggeringPeriod:
+          minutes: 5
+        notifyOn: triggeredAndResolved
+        integration:
+          integrationRef:
+            backendRef:
+              name: incident-io
+  alertType:
+    metricThreshold:
+      missingValues:
+        replaceWithZero: true
+        minNonNullValuesPct: 80

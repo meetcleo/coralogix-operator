@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +47,11 @@ import (
 )
 
 const managedByLabelKey = "app.kubernetes.io/managed-by"
+
+const (
+	defaultNotificationPeriodMinutes int64 = 5
+	incidentIoIntegrationName              = "incident-io"
+)
 
 //+kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;watch
 
@@ -286,6 +292,16 @@ func (r *PrometheusRuleReconciler) convertPrometheusRuleAlertToCxAlert(ctx conte
 				updated = true
 			}
 
+			// Only reconcile the notification group when the PrometheusRule defines the
+			// annotations; otherwise preserve a manually-tuned NotificationGroup on the
+			// Alert CR (see #295 - don't overwrite advanced Alert fields).
+			if desiredNotificationGroup := prometheusAlertToNotificationGroup(rule); desiredNotificationGroup != nil {
+				if !reflect.DeepEqual(alert.Spec.NotificationGroup, desiredNotificationGroup) {
+					alert.Spec.NotificationGroup = desiredNotificationGroup
+					updated = true
+				}
+			}
+
 			desiredTypeDefinition := coralogixv1beta1.AlertTypeDefinition{
 				MetricThreshold: prometheusAlertToMetricThreshold(rule, desiredPriority),
 			}
@@ -377,13 +393,67 @@ func shouldTrackAlerts(prometheusRule *prometheus.PrometheusRule) bool {
 func prometheusAlertingRuleToAlertSpec(rule *prometheus.Rule) coralogixv1beta1.AlertSpec {
 	priority := getPriority(*rule)
 	return coralogixv1beta1.AlertSpec{
-		Name:         rule.Alert,
-		Description:  rule.Annotations["description"],
-		EntityLabels: rule.Labels,
-		Priority:     getPriority(*rule),
+		Name:              rule.Alert,
+		Description:       rule.Annotations["description"],
+		EntityLabels:      rule.Labels,
+		Priority:          priority,
+		NotificationGroup: prometheusAlertToNotificationGroup(*rule),
 		TypeDefinition: coralogixv1beta1.AlertTypeDefinition{
 			MetricThreshold: prometheusAlertToMetricThreshold(*rule, priority),
 		},
+	}
+}
+
+// prometheusAlertToNotificationGroup builds a NotificationGroup from annotations:
+// cxIntegrationName sets a custom outbound-webhook integration, notifyToIncidentIo
+// (on/true) adds the incident-io integration, and cxNotifyEveryMin overrides the
+// re-trigger period (defaulting to the rule's `for` duration, then to 5 minutes).
+func prometheusAlertToNotificationGroup(rule prometheus.Rule) *coralogixv1beta1.NotificationGroup {
+	notificationPeriod := defaultNotificationPeriodMinutes
+	if cxNotifyEveryMin, ok := rule.Annotations["cxNotifyEveryMin"]; ok {
+		if minutes, err := strconv.Atoi(cxNotifyEveryMin); err == nil {
+			notificationPeriod = int64(minutes)
+		}
+	} else if rule.For != nil {
+		if duration, err := time.ParseDuration(string(*rule.For)); err == nil {
+			notificationPeriod = int64(duration.Minutes())
+		}
+	}
+	if notificationPeriod == 0 {
+		notificationPeriod = defaultNotificationPeriodMinutes
+	}
+
+	var integrationNames []string
+	if integrationName, ok := rule.Annotations["cxIntegrationName"]; ok {
+		integrationNames = append(integrationNames, integrationName)
+	}
+	if notify, ok := rule.Annotations["notifyToIncidentIo"]; ok && (notify == "on" || notify == "true") {
+		integrationNames = append(integrationNames, incidentIoIntegrationName)
+	}
+
+	if len(integrationNames) == 0 {
+		return nil
+	}
+
+	webhooks := make([]coralogixv1beta1.WebhookSettings, len(integrationNames))
+	for i, name := range integrationNames {
+		webhooks[i] = coralogixv1beta1.WebhookSettings{
+			RetriggeringPeriod: coralogixv1beta1.RetriggeringPeriod{
+				Minutes: ptr.To(notificationPeriod),
+			},
+			NotifyOn: coralogixv1beta1.NotifyOnTriggeredAndResolved,
+			Integration: coralogixv1beta1.IntegrationType{
+				IntegrationRef: &coralogixv1beta1.IntegrationRef{
+					BackendRef: &coralogixv1beta1.OutboundWebhookBackendRef{
+						Name: ptr.To(name),
+					},
+				},
+			},
+		}
+	}
+
+	return &coralogixv1beta1.NotificationGroup{
+		Webhooks: webhooks,
 	}
 }
 
