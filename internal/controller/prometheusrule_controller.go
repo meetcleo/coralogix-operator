@@ -305,7 +305,11 @@ func (r *PrometheusRuleReconciler) convertPrometheusRuleAlertToCxAlert(ctx conte
 			desiredTypeDefinition := coralogixv1beta1.AlertTypeDefinition{
 				MetricThreshold: prometheusAlertToMetricThreshold(rule, desiredPriority),
 			}
-			desiredTypeDefinition.MetricThreshold.MissingValues.MinNonNullValuesPct = alert.Spec.TypeDefinition.MetricThreshold.MissingValues.MinNonNullValuesPct
+			// Preserve a manually-tuned MinNonNullValuesPct on the Alert CR (see #295),
+			// unless the PrometheusRule explicitly sets it via annotation.
+			if _, ok := rule.Annotations["cxMinNonNullValuesPct"]; !ok {
+				desiredTypeDefinition.MetricThreshold.MissingValues.MinNonNullValuesPct = alert.Spec.TypeDefinition.MetricThreshold.MissingValues.MinNonNullValuesPct
+			}
 			if !reflect.DeepEqual(alert.Spec.TypeDefinition, desiredTypeDefinition) {
 				alert.Spec.TypeDefinition = desiredTypeDefinition
 				updated = true
@@ -529,10 +533,27 @@ func prometheusAlertToMetricThreshold(rule prometheus.Rule, priority coralogixv1
 				},
 			},
 		},
-		MissingValues: coralogixv1beta1.MetricMissingValues{
-			MinNonNullValuesPct: ptr.To(int64(0)),
-		},
+		MissingValues: prometheusAlertToMissingValues(rule),
 	}
+}
+
+// prometheusAlertToMissingValues maps the cxReplaceWithZero and cxMinNonNullValuesPct
+// annotations onto the alert's missing-values handling, defaulting to 0% when unset.
+func prometheusAlertToMissingValues(rule prometheus.Rule) coralogixv1beta1.MetricMissingValues {
+	missingValues := coralogixv1beta1.MetricMissingValues{
+		MinNonNullValuesPct: ptr.To(int64(0)),
+	}
+	if cxReplaceWithZero, ok := rule.Annotations["cxReplaceWithZero"]; ok {
+		if replaceWithZero, err := strconv.ParseBool(cxReplaceWithZero); err == nil {
+			missingValues.ReplaceWithZero = replaceWithZero
+		}
+	}
+	if cxMinNonNullValuesPct, ok := rule.Annotations["cxMinNonNullValuesPct"]; ok {
+		if pct, err := strconv.Atoi(cxMinNonNullValuesPct); err == nil {
+			missingValues.MinNonNullValuesPct = ptr.To(int64(pct))
+		}
+	}
+	return missingValues
 }
 
 func getPriority(rule prometheus.Rule) coralogixv1beta1.AlertPriority {

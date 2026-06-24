@@ -48,6 +48,28 @@ func TestShouldTrackRules(t *testing.T) {
 	}
 }
 
+func TestPrometheusAlertToMissingValues(t *testing.T) {
+	tests := []struct {
+		name            string
+		annotations     map[string]string
+		expectReplace   bool
+		expectMinNonNil int64
+	}{
+		{name: "defaults", annotations: nil, expectReplace: false, expectMinNonNil: 0},
+		{name: "replace with zero", annotations: map[string]string{"cxReplaceWithZero": "true"}, expectReplace: true, expectMinNonNil: 0},
+		{name: "min non-null pct", annotations: map[string]string{"cxMinNonNullValuesPct": "80"}, expectReplace: false, expectMinNonNil: 80},
+		{name: "both", annotations: map[string]string{"cxReplaceWithZero": "true", "cxMinNonNullValuesPct": "60"}, expectReplace: true, expectMinNonNil: 60},
+		{name: "invalid values ignored", annotations: map[string]string{"cxReplaceWithZero": "nope", "cxMinNonNullValuesPct": "abc"}, expectReplace: false, expectMinNonNil: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mv := prometheusAlertToMissingValues(prometheus.Rule{Annotations: tt.annotations})
+			assert.Equal(t, tt.expectReplace, mv.ReplaceWithZero)
+			assert.Equal(t, ptr.To(tt.expectMinNonNil), mv.MinNonNullValuesPct)
+		})
+	}
+}
+
 func TestPrometheusAlertToNotificationGroup(t *testing.T) {
 	t.Run("no annotations yields no group", func(t *testing.T) {
 		assert.Nil(t, prometheusAlertToNotificationGroup(prometheus.Rule{}))
