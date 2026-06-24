@@ -358,11 +358,17 @@ func shouldTrackRecordingRules(prometheusRule *prometheus.PrometheusRule) bool {
 	if value, ok := prometheusRule.Labels[utils.TrackPrometheusRuleRecordingRulesLabelKey]; ok && value == "true" {
 		return true
 	}
+	if value, ok := prometheusRule.Labels[utils.KubernetesComponentLabelKey]; ok && value == utils.KubernetesComponentSLO {
+		return true
+	}
 	return false
 }
 
 func shouldTrackAlerts(prometheusRule *prometheus.PrometheusRule) bool {
 	if value, ok := prometheusRule.Labels[utils.TrackPrometheusRuleAlertsLabelKey]; ok && value == "true" {
+		return true
+	}
+	if value, ok := prometheusRule.Labels[utils.KubernetesComponentLabelKey]; ok && value == utils.KubernetesComponentSLO {
 		return true
 	}
 	return false
@@ -513,6 +519,9 @@ func (r *PrometheusRuleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return true
 		}
 		if value, ok := labels[utils.TrackPrometheusRuleAlertsLabelKey]; ok && value == "true" {
+			return true
+		}
+		if value, ok := labels[utils.KubernetesComponentLabelKey]; ok && value == utils.KubernetesComponentSLO {
 			return true
 		}
 		return false
