@@ -48,6 +48,28 @@ func TestShouldTrackRules(t *testing.T) {
 	}
 }
 
+func TestGetPriority(t *testing.T) {
+	tests := []struct {
+		name     string
+		labels   map[string]string
+		expected coralogixv1beta1.AlertPriority
+	}{
+		{name: "critical", labels: map[string]string{"severity": "critical"}, expected: coralogixv1beta1.AlertPriorityP1},
+		{name: "error", labels: map[string]string{"severity": "error"}, expected: coralogixv1beta1.AlertPriorityP2},
+		{name: "case-insensitive", labels: map[string]string{"severity": "Warning"}, expected: coralogixv1beta1.AlertPriorityP3},
+		{name: "info maps to P4", labels: map[string]string{"severity": "info"}, expected: coralogixv1beta1.AlertPriorityP4},
+		{name: "none maps to P5", labels: map[string]string{"severity": "none"}, expected: coralogixv1beta1.AlertPriorityP5},
+		{name: "missing defaults to P5", labels: map[string]string{}, expected: coralogixv1beta1.AlertPriorityP5},
+		{name: "empty defaults to P5", labels: map[string]string{"severity": ""}, expected: coralogixv1beta1.AlertPriorityP5},
+		{name: "unknown defaults to P5", labels: map[string]string{"severity": "bogus"}, expected: coralogixv1beta1.AlertPriorityP5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, getPriority(prometheus.Rule{Labels: tt.labels}))
+		})
+	}
+}
+
 func TestPrometheusAlertToMissingValues(t *testing.T) {
 	tests := []struct {
 		name            string

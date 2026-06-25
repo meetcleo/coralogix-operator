@@ -562,7 +562,8 @@ func getPriority(rule prometheus.Rule) coralogixv1beta1.AlertPriority {
 			return priority
 		}
 	}
-	return coralogixv1beta1.AlertPriorityP4
+	// Unset, empty, "none", or unrecognized severities are treated as P5/no escalation.
+	return coralogixv1beta1.AlertPriorityP5
 }
 
 var prometheusSeverityToCXPriority = map[string]coralogixv1beta1.AlertPriority{
