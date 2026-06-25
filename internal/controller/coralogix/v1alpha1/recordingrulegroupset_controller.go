@@ -56,10 +56,16 @@ func (r *RecordingRuleGroupSetReconciler) RequeueInterval() time.Duration {
 	return r.Interval
 }
 
+// recordingRuleGroupSetRemoteName builds the Coralogix-side name, prefixing the
+// namespace so identically-named sets in different namespaces don't collide.
+func recordingRuleGroupSetRemoteName(namespace, name, suffix string) string {
+	return fmt.Sprintf("%s-%s%s", namespace, name, suffix)
+}
+
 func (r *RecordingRuleGroupSetReconciler) HandleCreation(ctx context.Context, log logr.Logger, obj client.Object) error {
 	recordingRuleGroupSet := obj.(*coralogixv1alpha1.RecordingRuleGroupSet)
 	createRequest := recordingrules.CreateRuleGroupSet{
-		Name:   ptr.To(fmt.Sprintf("%s%s", recordingRuleGroupSet.Name, r.RecordingRuleGroupSetSuffix)),
+		Name:   ptr.To(recordingRuleGroupSetRemoteName(recordingRuleGroupSet.Namespace, recordingRuleGroupSet.Name, r.RecordingRuleGroupSetSuffix)),
 		Groups: recordingRuleGroupSet.Spec.ExtractRecordingRuleGroups(),
 	}
 	log.Info("Creating remote recordingRuleGroupSet", "recordingRuleGroupSet", utils.FormatJSON(createRequest))
