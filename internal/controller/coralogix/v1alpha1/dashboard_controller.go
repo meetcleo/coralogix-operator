@@ -66,8 +66,8 @@ func (r *DashboardReconciler) HandleCreation(ctx context.Context, log logr.Logge
 	}
 
 	// When the spec carries an explicit id, adopt an existing remote dashboard via
-	// Replace instead of failing Create with "already exists". If no remote dashboard
-	// has that id yet, fall through to Create.
+	// Replace instead as we need to effectively do an import.
+	// If no remote dashboard has that id then Create a new one.
 	if dashboardToCreate.Id != nil {
 		replaceRequest := &cxsdk.ReplaceDashboardRequest{Dashboard: dashboardToCreate}
 		log.Info("Adopting existing remote dashboard", "dashboard", protojson.Format(replaceRequest))
@@ -79,6 +79,9 @@ func (r *DashboardReconciler) HandleCreation(ctx context.Context, log logr.Logge
 			}
 			return nil
 		}
+		// If this is a fake ID then we error out as we should assume that this was exported
+		// from Coralogix and should still exist. Alternatively we just re-create it but
+		// that may be masking an error in the UI -> export -> operator sync workflow.
 		if cxsdk.Code(err) != codes.NotFound {
 			return fmt.Errorf("error on adopting remote dashboard: %w", err)
 		}
