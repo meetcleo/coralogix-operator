@@ -64,6 +64,26 @@ func (r *DashboardReconciler) HandleCreation(ctx context.Context, log logr.Logge
 	if err != nil {
 		return fmt.Errorf("error on extracting dashboard from spec: %w", err)
 	}
+
+	// When the spec carries an explicit id, adopt an existing remote dashboard via
+	// Replace instead of failing Create with "already exists". If no remote dashboard
+	// has that id yet, fall through to Create.
+	if dashboardToCreate.Id != nil {
+		replaceRequest := &cxsdk.ReplaceDashboardRequest{Dashboard: dashboardToCreate}
+		log.Info("Adopting existing remote dashboard", "dashboard", protojson.Format(replaceRequest))
+		replaceResponse, err := r.DashboardsClient.Replace(ctx, replaceRequest)
+		if err == nil {
+			log.Info("Adopted remote dashboard", "dashboard", protojson.Format(replaceResponse))
+			dashboard.Status = coralogixv1alpha1.DashboardStatus{
+				ID: ptr.To(dashboardToCreate.Id.GetValue()),
+			}
+			return nil
+		}
+		if cxsdk.Code(err) != codes.NotFound {
+			return fmt.Errorf("error on adopting remote dashboard: %w", err)
+		}
+	}
+
 	createRequest := &cxsdk.CreateDashboardRequest{
 		Dashboard: dashboardToCreate,
 	}
