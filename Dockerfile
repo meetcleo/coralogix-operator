@@ -1,5 +1,9 @@
 # Build the manager binary
-FROM golang:1.24 as builder
+# Use buildx locally to compile against different platforms
+#  docker buildx build --platform linux/amd64 -t coralogix-operator/coralogix-operator:v2.3.1-1-amd64 .
+#  docker buildx build --platform linux/arm64 -t coralogix-operator/coralogix-operator:v2.3.1-1-arm64 .
+FROM --platform=${BUILDPLATFORM} golang:1.24 AS builder
+ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
